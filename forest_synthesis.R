@@ -74,7 +74,7 @@ BE_synthesis_identifier_dat  <- data.frame(BEplotID = c(paste("AEW",formatC(1:50
 BE_synthesis_identifier_dat <- BE_synthesis_identifier_dat %>% subset( habitat == "forest")
 ### ===== ###
 
-### === Root decomposition === ###
+### === Root decomposition === ### 
 #Principal Investigator:     Schrumpf
 #Dataset(s):                 16666_2_Dataset
 #Process and component name: Root decomposition
@@ -376,17 +376,27 @@ length(which(is.na(BE_synthesis_forest_dat$Coarse_Roots_Biomass))) #23 NAs
 
 ### === Herbivory === ###
 #Principal Investigator:     Ammer
+#                            Weisser
 #Dataset(s):                 20347_2_Dataset
+#                            12627_2_Dataset
 #Process and component name: Herbivory
 #Relevant columns (unit):    Bper (%)
+#                            Schaden & ohne_Schaden (integer)
+#                            Minen & ohne_Minen (integer)
+#                            Frass & ohne_Frass (integer)
+#                            Saug & ohne_Saug + Phyllaphis & ohne_Phyllaphis (integer)
+#                            Gallen & ohne_Gallen + Gallmilben & ohne_Gallmilben (integer)
+#                            
 
 #read data
 dat <- read.table(paste0(pathtodata, "Functions/20347_2_Dataset/20347_2_data.txt"), header = T, sep = ";")
+dat1 <- read.table(paste0(pathtodata, "Functions/12627_2_Dataset/12627_2_data.txt"), header = T, sep = ";")
 #add two-digit plot names for merging with the BE_synthesis_forest_dat
-names(dat.1)
+names(dat1)
 dat <- BEplotZeros(dat, "EP_Plotid", plotnam = "BEplotID")
+dat1 <- BEplotZeros(dat1, "EP_Plotid", plotnam = "BEplotID")
 
-#special treatment for the added columns
+#special treatment for the added columns of the 20347_2_Dataset
 #before merging dat to BE_synthesis_forest_dat, Browsing_perc_overall, Browsing_perc_broadleaf and Browsing_perc_conifers has to be formatted
 #Where total number of saplings was equal to zero, the browsing percentage is given as NA, as there were no saplings to measure the browsing percentage. 
 #However, there might be browsing percentage = 0, which is different from NA, as the saplings of the subplot were not subject to herbivory.
@@ -404,6 +414,63 @@ BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat.1, by = "BEplotID"
 names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "all"] <- "Browsing_perc_overall"
 names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "BL"] <- "Browsing_perc_broadleaf"
 names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "CON"] <- "Browsing_perc_conifers"
+#=#
+
+#special treatment for the added columns of the 12627_2_Dataset
+#before merging dat to BE_synthesis_forest_dat, the following variables have to be calculated from the relevant columns.
+c("Beech_herbivory_understory_overall", 
+  "Beech_herbivory_understory_mining", 
+  "Beech_herbivory_understory_chewing",
+  "Beech_herbivory_understory_sucking", 
+  "Beech_herbivory_understory_galls", 
+  "Beech_herbivory_canopy_overall", 
+  "Beech_herbivory_canopy_mining", 
+  "Beech_herbivory_canopy_chewing", 
+  "Beech_herbivory_canopy_sucking", 
+  "Beech_herbivory_canopy_galls")
+#These variables are the average percentage of sampled beech leaves that show signs of herbivory from different classes of herbivores
+#Therefore, calculate the percentage of leaves that show herbivory per beech individual
+#and get the average of these percentages for understory and canopy samples per BEplotID
+names(dat1)
+
+#calculate percentage of leaves with signs of herbivory per individual
+dat1.1 <- dat1 %>% 
+  rowwise() %>% 
+  mutate( herbivory_overall = 100*(Schaden/sum(Schaden, ohne_Schaden)),
+          herbivory_mining = 100*(Minen/sum(Minen, ohne_Minen)),
+          herbivory_chewing = 100*(Frass/sum(Frass, ohne_Frass)),
+          herbivory_sucking1 = 100*(Saug/sum(Saug, ohne_Saug)),
+          herbivory_sucking2 = 100*(Phyllaphis/sum(Phyllaphis, ohne_Phyllaphis)),
+          herbivory_galls1 = 100*(Gallen/sum(Gallen, ohne_Gallen)),
+          herbivory_galls2 = 100*(Gallmilben/sum(Gallmilben, ohne_Gallmilben)))
+
+#subset Canopy and understorey data
+understorey <- dat1.1 %>% 
+  subset( Stratum == "understorey")
+
+Canopy <- dat1.1 %>% 
+  subset( Stratum == "Canopy")
+
+#calculate average percentage of herbivory per plot for Canopy and understorey #CHECK THIS STEP
+summary_understorey <- understorey %>% 
+  group_by( BEplotID) %>% 
+  summarise( Beech_herbivory_understory_overall = mean(herbivory_overall),
+             Beech_herbivory_understory_mining = mean(herbivory_mining),
+             Beech_herbivory_understory_chewing = mean(herbivory_chewing),
+             Beech_herbivory_understory_sucking = mean(c(herbivory_sucking1, herbivory_sucking2)), #this variable averages percentages of two sucking herbivores
+             Beech_herbivory_understory_galls = mean(c(herbivory_galls1, herbivory_galls2))) #this variable averages percentages of two gall herbivores
+
+summary_Canopy <- Canopy %>% 
+  group_by( BEplotID) %>% 
+  summarise( Beech_herbivory_Canopy_overall = mean(herbivory_overall),
+             Beech_herbivory_Canopy_mining = mean(herbivory_mining),
+             Beech_herbivory_Canopy_chewing = mean(herbivory_chewing),
+             Beech_herbivory_Canopy_sucking = mean(c(herbivory_sucking1, herbivory_sucking2)), #this variable averages percentages of two sucking herbivores
+             Beech_herbivory_Canopy_galls = mean(c(herbivory_galls1, herbivory_galls2))) #this variable averages percentages of two gall herbivores
+
+#=#
+
+
 #count NAs in the added columns
 length(which(is.na(BE_synthesis_forest_dat$Browsing_perc_overall))) #46 NAs
 length(which(is.na(BE_synthesis_forest_dat$Browsing_perc_broadleaf))) #48 NAs
