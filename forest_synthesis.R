@@ -1,6 +1,6 @@
 ### === Synthesis dataset functions forest assembly === ###
 
-#Author(s): Marc Beringer, Paul Armando Gilmour Rivas Luginbühl, Noëlle Schenk, Catarina Penone
+#Author(s): Marc Beringer, Paul Armando Gilmour Rivas Luginbühl, Noëlle Schenk, Caterina Penone
 #Date: July, 2023
 #Purpose: Assemble dataset for forest ecosystem functions
 #         First, generate a dataframe with identifier columns
