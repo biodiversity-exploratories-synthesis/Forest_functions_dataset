@@ -1,7 +1,7 @@
 # Synthesis_dataset_functions_forest
 Released at Zenodo : NOT YET RELEASED
 
-Code used for generation of the synthesis grassland function dataset (https://github.com/biodiversity-exploratories-synthesis/Synthesis_dataset_functions_forest/Synthesis_dataset_functions_forest1.R)
+Code used for generation of the synthesis grassland function dataset [https://github.com/biodiversity-exploratories-synthesis/Synthesis_dataset_functions_forest/Synthesis_dataset_functions_forest1.R](https://github.com/biodiversity-exploratories-synthesis/Synthesis_dataset_functions_forest/blob/main/forest_synthesis.R)
 
 ### License
 
