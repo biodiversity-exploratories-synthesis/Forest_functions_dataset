@@ -18,6 +18,9 @@ getwd()
 ### ===== ###
 
 ### === write table checkpoint === ###
+view(BE_synthesis_forest_dat[,c(1,50:51)])
+
+
 write.table(BE_synthesis_forest_dat, file = "BE_synthesis_forest_dat.txt", quote = F, sep = "\t", row.names = F)
 ### ===== ###
 
@@ -252,6 +255,7 @@ length(which(is.na(BE_synthesis_forest_dat$Pmic))) #2 NAs
 
 ### === Sulfur availability === ###
 #Principal Investigator:     Trumbore
+#                            Schrumpf
 #Dataset(s):                 20045_3_Dataset
 #                            24346_3_Dataset
 #Process and component name: S availability
@@ -438,19 +442,23 @@ length(which(is.na(BE_synthesis_forest_dat$Fine_root_fructose_conc))) #4 NAs
 #Relevant columns (unit):    Fine_Roots_Biomass (g/cm^3)
 #                            Coarse_Roots_Biomass (g/cm^3)
 
-#TODO check whether fine and coarse root biomass can be summed up for a root biomass variable
-
 #read data
 dat <- read.table(paste0(pathtodata, "Functions/14448_3_Dataset/14448_3_data.txt"), header = T, sep = ";")
 #add two-digit plot names for merging with the BE_synthesis_forest_dat
 names(dat)
 dat <- BEplotZeros(dat, "EP_Plotid", plotnam = "BEplotID")
+
+#special treatment for the added columns of the 14448_3_Dataset
+#before merging sum up the Fine_Roots_Biomass and Coarse_Roots_Biomass to get Root_Biomass (g/cm^3)
+#if Fine_Roots_Biomass, or Coarse_Roots_Biomass is NA, Root_Biomass is simply the other value
+dat.1 <- dat %>% 
+  rowwise( ) %>% 
+  mutate( Root_Biomass = sum(c(Fine_Roots_Biomass, Coarse_Roots_Biomass), na.rm = TRUE))
+
 #merge relevant columns with the BE_synthesis_forest_dat
-BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat[,c("Fine_Roots_Biomass","Coarse_Roots_Biomass","BEplotID")], by = "BEplotID", all.x = T)
-#special treatment for the added columns
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat.1[,c("Root_Biomass","BEplotID")], by = "BEplotID", all.x = T)
 #count NAs in the added columns
-length(which(is.na(BE_synthesis_forest_dat$Fine_Roots_Biomass))) #1 NAs
-length(which(is.na(BE_synthesis_forest_dat$Coarse_Roots_Biomass))) #24 NAs
+length(which(is.na(BE_synthesis_forest_dat$Root_Biomass))) #1 NAs
 ### ===== ###
 
 ### === Herbivory === ###
@@ -458,6 +466,7 @@ length(which(is.na(BE_synthesis_forest_dat$Coarse_Roots_Biomass))) #24 NAs
 #                            Weisser
 #Dataset(s):                 20347_2_Dataset
 #                            12627_2_Dataset
+#                            18567_2_Dataset
 #Process and component name: Herbivory
 #Relevant columns (unit):    Bper (%)
 #                            Schaden & ohne_Schaden (integer)
