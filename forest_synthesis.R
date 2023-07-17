@@ -8,7 +8,7 @@
 #         Third, calculate new variables where necessary
 
 ### === working directory === ### 
-setwd("C:/Users/Marc Beringer/Desktop/R/Synthesis_dataset_functions_forest1") #Not necessary for the final script
+setwd("C:/Users/Marc Beringer/Desktop/R/Synthesis_dataset_functions_forest") #Not necessary for the final script
 getwd()
 ### ===== ###
 
@@ -18,9 +18,7 @@ getwd()
 ### ===== ###
 
 ### === write table checkpoint === ###
-view(BE_synthesis_forest_dat[,c(1,50:51)])
-
-
+view(BE_synthesis_forest_dat[,c(1,50:57)])
 write.table(BE_synthesis_forest_dat, file = "BE_synthesis_forest_dat.txt", quote = F, sep = "\t", row.names = F)
 ### ===== ###
 
@@ -474,15 +472,17 @@ length(which(is.na(BE_synthesis_forest_dat$Root_Biomass))) #1 NAs
 #                            Frass & ohne_Frass (integer)
 #                            Saug & ohne_Saug + Phyllaphis & ohne_Phyllaphis (integer)
 #                            Gallen & ohne_Gallen + Gallmilben & ohne_Gallmilben (integer)
-#                            
+#                            Damage_class (three infestation classes: 1 == no visible attack; 2 == weak attack; 3 == heavy attack)                            
 
 #read data
 dat <- read.table(paste0(pathtodata, "Functions/20347_2_Dataset/20347_2_data.txt"), header = T, sep = ";")
 dat1 <- read.table(paste0(pathtodata, "Functions/12627_2_Dataset/12627_2_data.txt"), header = T, sep = ";")
+dat2 <- read.table(paste0(pathtodata, "Functions/18567_2_Dataset/18567_2_data.txt"), header = T, sep = ";")
 #add two-digit plot names for merging with the BE_synthesis_forest_dat
-names(dat1)
+names(dat2)
 dat <- BEplotZeros(dat, "EP_Plotid", plotnam = "BEplotID")
 dat1 <- BEplotZeros(dat1, "EP_Plotid", plotnam = "BEplotID")
+dat2 <- BEplotZeros(dat2, "EP_Plotid", plotnam = "BEplotID")
 
 #special treatment for the added columns of the 20347_2_Dataset
 #before merging dat to BE_synthesis_forest_dat, Browsing_perc_overall, Browsing_perc_broadleaf and Browsing_perc_conifers has to be formatted
@@ -546,6 +546,17 @@ dat1.1 <- dat1 %>%
 BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat1.1, by = "BEplotID", all.x = T)
 #=#
 
+#special treatment for the added columns of the 18567_2_Dataset
+#there are five replicates for Cryptococcus infestation per BEplotID
+#take the median of the damage classes per BEplotID
+dat2.1 <- dat2 %>% 
+  group_by( BEplotID) %>% 
+  summarise( Cryptococcus_infestation = median(Damage_class, na.rm = TRUE))
+
+#merge relevant columns with the BE_synthesis_forest_dat
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat2.1, by = "BEplotID", all.x = T)
+#=#
+
 #count NAs in the added columns
 length(which(is.na(BE_synthesis_forest_dat$Browsing_perc_overall))) #47 NAs
 length(which(is.na(BE_synthesis_forest_dat$Browsing_perc_broadleaf))) #49 NAs
@@ -559,13 +570,73 @@ length(which(is.na(BE_synthesis_forest_dat$Beech_herbivory_Canopy_mining))) #47 
 length(which(is.na(BE_synthesis_forest_dat$Beech_herbivory_Canopy_chewing))) #47 NAs
 length(which(is.na(BE_synthesis_forest_dat$Beech_herbivory_Canopy_sucking))) #47 NAs
 length(which(is.na(BE_synthesis_forest_dat$Beech_herbivory_Canopy_galls))) #47 NAs
+length(which(is.na(BE_synthesis_forest_dat$Cryptococcus_infestation))) #47 NAs
 ### ===== ###
 
+### === Nutrient cycling === ###
+#Principal Investigator:     Polle
+#                            Schrumpf
+#                            Trumbore
+#Dataset(s):                 19230_3_Dataset
+#                            14567_5_Dataset
+#                            26908_4_Dataset
+#Process and component name: Nutrient cycling
+#Relevant columns (unit):    Fine_Roots_Carbon (mg/g)
+#                            Fine_Roots_Nitrogen (mg/g)
+#                            Fine_roots_CN_ratio (ratio from Total_C and Total_N that have the unit percentage (%))
+#                            Soil_respiration_2018 (g/(m^2*d))
+#                            Soil_respiration_2019 (g/(m^2*d))
 
+#TODO check how the Fine_roots_CN_ratio is related to soil CN_ratios and whether these are comparable.
+#TODO check why Total_C and Total_N (used to calculate the Fine_roots_CN_ratio), weren't included here.
+#TODO check whether Soil_respiration_2018 and 2019 can be combined for a composite Soil_respiration variable
 
+#read data
+dat <- read.table(paste0(pathtodata, "Functions/19230_3_Dataset/19230_3_data.txt"), header = T, sep = ";")
+dat1 <- read.table(paste0(pathtodata, "Functions/14567_5_Dataset/14567_5_data.txt"), header = T, sep = ";")
+dat2 <- read.table(paste0(pathtodata, "Functions/26908_4_Dataset/26908_4_data.txt"), header = T, sep = ";")
+#add two-digit plot names for merging with the BE_synthesis_forest_dat
+names(dat2)
+dat <- BEplotZeros(dat, "EP_Plotid", plotnam = "BEplotID")
+dat1 <- BEplotZeros(dat1, "EP_Plotid", plotnam = "BEplotID")
+dat2 <- BEplotZeros(dat2, "EP_Plotid", plotnam = "BEplotID")
 
+#merge relevant columns with the BE_synthesis_forest_dat
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat[,c("Carbon_within_fine_roots_Soil_Sampling_May_2011", 
+                                                                 "Nitrogen_within_fine_roots_Soil_Sampling_May_2011",
+                                                                 "BEplotID")], by = "BEplotID", all.x = T)
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat1[,c("CN_ratio", "BEplotID")], by = "BEplotID", all.x = T)
 
+#special treatment for the added columns of the 19230_3_Dataset and 14567_5_Dataset
+#rename columns
+names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "Carbon_within_fine_roots_Soil_Sampling_May_2011"] <- "Fine_Roots_Carbon"
+names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "Nitrogen_within_fine_roots_Soil_Sampling_May_2011"] <- "Fine_Roots_Nitrogen"
+names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "CN_ratio"] <- "Fine_roots_CN_ratio"
+#=#
 
+#special treatment for the added columns of the 26908_4_Dataset
+#Soil_respiration was measured in 2018 and 2019. Create Soil_respiration_2018 and Soil_respiration_2019 columns.
+dat2.1 <- dat2 %>%
+  subset( Year == "2018") %>% 
+  pivot_wider( names_from = Year, names_glue = "Soil_respiration_{Year}", values_from = Rs)
+
+dat2.2 <- dat2 %>%
+  subset( Year == "2019") %>% 
+  pivot_wider( names_from = Year, names_glue = "Soil_respiration_{Year}", values_from = Rs)
+
+#merge relevant columns with the BE_synthesis_forest_dat
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat2.1[,c("Soil_respiration_2018", "BEplotID")], by = "BEplotID", all.x = T)
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat2.2[,c("Soil_respiration_2019", "BEplotID")], by = "BEplotID", all.x = T)
+#=#
+
+#count NAs in the added columns
+length(which(is.na(BE_synthesis_forest_dat$Pho))) #1 NAs
+length(which(is.na(BE_synthesis_forest_dat$Fine_Roots_Carbon))) #2 NAs
+length(which(is.na(BE_synthesis_forest_dat$Fine_Roots_Nitrogen))) #2 NAs
+length(which(is.na(BE_synthesis_forest_dat$Fine_roots_CN_ratio))) #2 NAs
+length(which(is.na(BE_synthesis_forest_dat$Soil_respiration_2018))) #1 NAs
+length(which(is.na(BE_synthesis_forest_dat$Soil_respiration_2019))) #1 NAs
+### ===== ###
 
 
 
