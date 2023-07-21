@@ -17,4 +17,4 @@ This project is licensed under the terms of the Creative Commons Attribution 4.0
 
 ## Notes
 
-- Dung removal has negative values, because different dung types were scaled in order to aggregate them. --> In future, think about how to avoid negative values.
+- Dung_removal_2014 has negative values, because different dung types were scaled in order to aggregate them. --> In future, think about how to avoid negative values.
