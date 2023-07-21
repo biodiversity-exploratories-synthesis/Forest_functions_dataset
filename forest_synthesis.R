@@ -18,7 +18,7 @@ getwd()
 ### ===== ###
 
 ### === write table checkpoint === ###
-view(BE_synthesis_forest_dat[,c(1,50:57)])
+view(BE_synthesis_forest_dat[,c(1:4,50:60)])
 write.table(BE_synthesis_forest_dat, file = "BE_synthesis_forest_dat.txt", quote = F, sep = "\t", row.names = F)
 ### ===== ###
 
@@ -58,16 +58,22 @@ pathtodata <- "P:/PROJECTS/Exploratories Synthesis/Data/Forest_functions/dataset
 ### ===== ###
 
 ### === data assembly === ###
-#create an empty dataframe with identifier (BEplotID, exploratory and habitat) columns, which will be filled with relevant columns later
-BE_synthesis_identifier_dat  <- data.frame(BEplotID = c(paste("AEW",formatC(1:50, width=2, flag="0"),sep=""),
-                                                        paste("AEG",formatC(1:50, width=2, flag="0"),sep=""),
-                                                        paste("SEW",formatC(1:50, width=2, flag="0"),sep=""),
-                                                        paste("SEG",formatC(1:50, width=2, flag="0"),sep=""),
-                                                        paste("HEW",formatC(1:51, width=2, flag="0"),sep=""), #HEW51 was established in 2017, after HEW02 was destroyed in 2016.
-                                                        paste("HEG",formatC(1:50, width=2, flag="0"),sep="")),
-                                                        exploratory=c(rep("ALB",100),rep("SCH",100),rep("HAI",101))) %>% 
-                                                        mutate( habitat = 
-                                                                  ifelse(grepl(pattern = "W", BEplotID), "forest", "grassland"))
+#create an empty dataframe with identifier columns (BEplotID, EP_Plotid, exploratory and habitat), which will be filled with relevant columns later
+#BEplotID is the two-digit plot identifier (e.g. AEW01) that will be used for merging, while EP_Plotid is the classic identifier (e.g. AEW1)
+BE_synthesis_identifier_dat  <- data.frame(BEplotID = c(paste("AEW", formatC(1:50, width = 2, flag = "0"), sep = ""),
+                                                        paste("AEG", formatC(1:50, width = 2, flag = "0"), sep = ""),
+                                                        paste("SEW", formatC(1:50, width = 2, flag = "0"), sep = ""),
+                                                        paste("SEG", formatC(1:50, width = 2, flag = "0"), sep = ""),
+                                                        paste("HEW", formatC(1:51, width = 2, flag = "0"), sep = ""), #HEW51 was established in 2017, after HEW02 was destroyed in 2016.
+                                                        paste("HEG", formatC(1:50, width = 2, flag = "0"), sep = "")),
+                                           EP_Plotid = c(paste("AEW", formatC(1:50), sep = ""),
+                                                         paste("AEG", formatC(1:50), sep = ""),
+                                                         paste("SEW", formatC(1:50), sep = ""),
+                                                         paste("SEG", formatC(1:50), sep = ""),
+                                                         paste("HEW", formatC(1:51), sep = ""), #HEW51 was established in 2017, after HEW02 was destroyed in 2016.
+                                                         paste("HEG", formatC(1:50), sep = "")),
+                                           exploratory = c(rep("ALB", 100), rep("SCH", 100), rep("HAI", 101))) %>% 
+                                           mutate( habitat = ifelse(grepl(pattern = "W", BEplotID), "forest", "grassland"))
 
 #filter for forest habitat
 BE_synthesis_identifier_dat <- BE_synthesis_identifier_dat %>% subset( habitat == "forest")
@@ -286,7 +292,7 @@ dat1.1 <- dat1[,c("Horizon","CS_ratio","BEplotID")] %>%
 BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat.1[,c("BEplotID","O_Horizon_CS_ratio_2014")], by = "BEplotID", all.x = T)
 BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat1.1[,c("BEplotID","O_Horizon_CS_ratio_2017")], by = "BEplotID", all.x = T)
 #=#
-view(BE_synthesis_forest_dat[,c(1,52)])
+
 #the destroyed HEW02 BEplotID contains the string NaN
 #replace with NA
 BE_synthesis_forest_dat[BE_synthesis_forest_dat == "NaN"] <- NA
@@ -298,18 +304,95 @@ length(which(is.na(BE_synthesis_forest_dat$O_Horizon_CS_ratio_2017))) #1 NAs
 ### === Dung decomposition === ### UNSOLVED QUESTIONS
 #Principal Investigator:     Blüthgen
 #Dataset(s):                 19866_2_Dataset
+#                            24966_3_Dataset
 #Process and component name: Dung decomposition
 #Relevant columns (unit):    removal_g (g)
-#                            removal_rate (%)
+#                            dung_depletion (ratio)
 
-#Notes: This variable is present in the grassland functions synthesis dataset. Ask Noëlle about calculations.
-#TODO scale(, center = TRUE) after dungtype
 
 #read data
 dat <- read.table(paste0(pathtodata, "Functions/19866_2_Dataset/19866_2_data.txt"), header = T, sep = ";")
+dat1 <- read.table(paste0(pathtodata, "Functions/24966_3_Dataset/24966_3_data.txt"), header = T, sep = ";")
 #add two-digit plot names for merging with the BE_synthesis_forest_dat
-names(dat)
+names(dat1)
 dat <- BEplotZeros(dat, "EP", plotnam = "BEplotID")
+dat1 <- BEplotZeros(dat1, "Plot", plotnam = "BEplotID")
+
+#special treatment of the removal_g column of the 19866_2_Dataset
+#as in the synthesis dataset functions grassland, here we only use samples gathered in summer 2014 (i.e. June, July and August)
+#since samples from May 2014 were not collected at all BEplotIDs
+#then we apply the same calculation as in the grassland dataset by first scaling each dungtype before averaging them per BEplotID
+#so that each dungtype (e.g. Cow, Sheep etc.) across the 150 BEplotIDs has a mean of 0 and a standard deviation of 1
+
+dat.1 <- dat %>% 
+  #select only forest BEplotIDs and remove May 2014 samples
+  subset( habitat == "Forest" & !(date == "May_2014")) %>% 
+  #scale removal_g across the range of each dungtype individually, to make dungtypes comparable to each other (i.e. Cow comparable with Sheep)
+  group_by( dungtype) %>% 
+  mutate( scaled_removal_g = scale(removal_g, center = T, scale = T)) %>% 
+  #then calculate the mean of the scaled_removal_g for each BEplotID
+  group_by( BEplotID) %>% 
+  summarise( dung_removal = mean(scaled_removal_g))
+
+#merge relevant columns with the BE_synthesis_forest_dat
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat.1[,c("BEplotID","dung_removal")], by = "BEplotID", all.x = T)
+#=#
+
+#count NAs in the added columns
+length(which(is.na(BE_synthesis_forest_dat$dung_removal))) #2 NAs
+#=#
+
+#TODO 
+#There is a dataset of dung_depletion for 2017 (24966_Dataset), which only contains the dungtype "Cow".
+#Check whether this data can be used as a temporal replicate for dung_removal
+#therefore, do pairwise correlations of dungtypes of the 19866_2_Dataset, if dungtypes correlate well, 
+#then it doesn't matter what dungtype we're looking at and we can compare the 2017 dung removal with the 2014 data from forests and in the grassland dataset
+#doesn't work if NAs are in the data
+
+dungtype.matrix <- dat %>% 
+  #select only forest BEplotIDs and remove May 2014 samples
+  subset( habitat == "Forest" & !(date == "May_2014")) %>% 
+  #scale removal_g across the range of each dungtype individually, to make dungtypes comparable to each other (i.e. Cow comparable with Sheep)
+  group_by( dungtype) %>% 
+  mutate( scaled_removal_g = scale(removal_g, center = T, scale = T)) %>%
+  pivot_wider( id_cols = "BEplotID" , names_from = dungtype, values_from = scaled_removal_g)
+
+#function to plot pairwise correlations
+panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...) {
+  usr <- par("usr")
+  on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  Cor <- cor(x, y, method = "pearson")
+  txt <- paste0(prefix, format(c(Cor, 0.123456789), digits = digits)[1])
+  if(missing(cex.cor)) {
+    cex.cor <- 0.4 / strwidth(txt)
+  }
+  text(0.5, 0.5, txt,
+       cex = 1 + cex.cor * Cor) # Resize the text by level of correlation
+}
+
+#plot pairwise correlations
+#dungtype "Cow" has one NA, therefore omit this NA
+#Conclusion: Dungtypes do not correlate well, we cannot compare dung removal averaged across dungtypes 2014 with only cow dung removal 2017
+pairs(na.omit(dungtype.matrix[,-c(1)]),
+      upper.panel = panel.cor,    # Correlation panel
+      lower.panel = panel.smooth) # Smoothed regression lines
+#=#
+
+#Does dung_depletion 2017 correlate with removal_g of dungtype Cow in the 2014 data?
+#dung_depletion 2017 has up to five replicates per BEplotID, average those before correlating
+dat1.1 <- dat1 %>% 
+  subset( Habitat == "F") %>% 
+  group_by( BEplotID) %>% 
+  summarise( dung_depletion_2017 = mean(dung_depletion, na.rm = T))
+
+#add the 2017 Cow dung depletion data to the dung removal data from 2014
+dungtype.matrix <- merge(dungtype.matrix, dat1.1, by = "BEplotID", all.x = T)
+
+#plot pairwise correlations
+pairs(na.omit(dungtype.matrix[,-c(1)]),
+      upper.panel = panel.cor,    # Correlation panel
+      lower.panel = panel.smooth) # Smoothed regression lines
 ### ===== ###
 
 ### === Soil carbon cycling === ###
@@ -414,23 +497,28 @@ length(which(is.na(BE_synthesis_forest_dat$Pho))) #1 NAs
 #Relevant columns (unit):    Concentration_of_Glucose (mg/g)
 #                            Concentration_of_Fructose (mg/g)
 
-#TODO check whether glucose and fructose can be summed up for a root sugar concentration variable
-
 #read data
 dat <- read.table(paste0(pathtodata, "Functions/18346_2_Dataset/18346_2_data.txt"), header = T, sep = ";")
 #add two-digit plot names for merging with the BE_synthesis_forest_dat
 names(dat)
 dat <- BEplotZeros(dat, "EP_Plotid", plotnam = "BEplotID")
-#merge relevant columns with the BE_synthesis_forest_dat
-BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat[,c("Concentration_of_Glucose","Concentration_of_Fructose","BEplotID")], by = "BEplotID", all.x = T)
 
-#special treatment for the added columns
+#special treatment for the added columns of the 18346_2_Dataset
+#create the Fine_root_carbohydrate_conc column by summing up Concentration_of_Glucose and Concentration_of_Fructose per BEplotID
+dat.1 <- dat %>% 
+  rowwise( ) %>% 
+  mutate( Fine_root_carbohydrate_conc = sum(Concentration_of_Glucose, Concentration_of_Fructose))
+
+#merge relevant columns with the BE_synthesis_forest_dat
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat.1[,c("Concentration_of_Glucose","Concentration_of_Fructose",
+                                                                   "Fine_root_carbohydrate_conc","BEplotID")], by = "BEplotID", all.x = T)
 #rename added columns for more context
 names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "Concentration_of_Glucose"] <- "Fine_root_glucose_conc"
 names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "Concentration_of_Fructose"] <- "Fine_root_fructose_conc"
 #count NAs in the added columns
 length(which(is.na(BE_synthesis_forest_dat$Fine_root_glucose_conc))) #4 NAs
 length(which(is.na(BE_synthesis_forest_dat$Fine_root_fructose_conc))) #4 NAs
+length(which(is.na(BE_synthesis_forest_dat$Fine_root_carbohydrate_conc))) #4 NAs
 ### ===== ###
 
 ### === Productivity === ###
