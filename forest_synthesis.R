@@ -20,7 +20,7 @@ getwd()
 ### === write table checkpoint === ###
 #Currently variables are added until "Cryptococcus_infestation" in the "Herbivory" Process
 #Add data from the large herbivory dataset before adding variables from the "Nutrient cycling" Process
-view(BE_synthesis_forest_dat[,c(1:4,60:65)])
+view(BE_synthesis_forest_dat[,c(1:4,60:69)])
 write.table(BE_synthesis_forest_dat, file = "BE_synthesis_forest_dat.txt", quote = F, sep = "\t", row.names = F)
 ### ===== ###
 
@@ -217,10 +217,9 @@ BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat6.1[,c("BEplotID","
 #=#
 
 #special treatment for the added columns
-#instead of values some rows contain the string "bdl", or NaN
+#instead of values some rows contain the string "bdl"
 #replace these with NA
 BE_synthesis_forest_dat[BE_synthesis_forest_dat == "bdl"] <- NA
-BE_synthesis_forest_dat[BE_synthesis_forest_dat == "NaN"] <- NA
 #count NAs in the added columns
 length(which(is.na(BE_synthesis_forest_dat$Potential_nitrification_rate_2014))) #11 NAs
 length(which(is.na(BE_synthesis_forest_dat$Ammonium_NH4_2014))) #30 NAs
@@ -345,9 +344,6 @@ BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat.1[,c("BEplotID","O
 BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat1.1[,c("BEplotID","O_Horizon_CS_ratio_2017")], by = "BEplotID", all.x = T)
 #=#
 
-#the destroyed HEW02 BEplotID contains the string NaN
-#replace with NA
-BE_synthesis_forest_dat[BE_synthesis_forest_dat == "NaN"] <- NA
 #count NAs in the added columns
 length(which(is.na(BE_synthesis_forest_dat$O_Horizon_CS_ratio_2014))) #1 NAs
 length(which(is.na(BE_synthesis_forest_dat$O_Horizon_CS_ratio_2017))) #1 NAs
@@ -643,6 +639,7 @@ length(which(is.na(BE_synthesis_forest_dat$Root_Biomass))) #1 NAs
 #Dataset(s):                 20347_2_Dataset
 #                            12627_2_Dataset
 #                            18567_2_Dataset
+#                            24806_2_Dataset
 #Process and component name: Herbivory
 #Relevant columns (unit):    Bper (%)
 #                            Schaden & ohne_Schaden (integer)
@@ -650,17 +647,22 @@ length(which(is.na(BE_synthesis_forest_dat$Root_Biomass))) #1 NAs
 #                            Frass & ohne_Frass (integer)
 #                            Saug & ohne_Saug + Phyllaphis & ohne_Phyllaphis (integer)
 #                            Gallen & ohne_Gallen + Gallmilben & ohne_Gallmilben (integer)
-#                            Damage_class (three infestation classes: 1 == no visible attack; 2 == weak attack; 3 == heavy attack)                            
+#                            Damage_class (three infestation classes: 1 == no visible attack; 2 == weak attack; 3 == heavy attack)
+#??? 24806_2_Dataset
+
+#TODO Check 24806_2_Dataset for meaningful variables (area damaged by different classes of herbivores)
 
 #read data
 dat <- read.table(paste0(pathtodata, "Functions/20347_2_Dataset/20347_2_data.txt"), header = T, sep = ";")
 dat1 <- read.table(paste0(pathtodata, "Functions/12627_2_Dataset/12627_2_data.txt"), header = T, sep = ";")
 dat2 <- read.table(paste0(pathtodata, "Functions/18567_2_Dataset/18567_2_data.txt"), header = T, sep = ";")
+dat3 <- read.table(paste0(pathtodata, "Functions/24806_2_Dataset/24806_2_data.txt"), header = T, sep = ";")
 #add two-digit plot names for merging with the BE_synthesis_forest_dat
-names(dat2)
+names(dat3)
 dat <- BEplotZeros(dat, "EP_Plotid", plotnam = "BEplotID")
 dat1 <- BEplotZeros(dat1, "EP_Plotid", plotnam = "BEplotID")
 dat2 <- BEplotZeros(dat2, "EP_Plotid", plotnam = "BEplotID")
+dat3 <- BEplotZeros(dat3, "plotid", plotnam = "BEplotID")
 
 #special treatment for the added columns of the 20347_2_Dataset
 #before merging dat to BE_synthesis_forest_dat, Browsing_perc_overall, Browsing_perc_broadleaf and Browsing_perc_conifers has to be formatted
@@ -733,6 +735,38 @@ dat2.1 <- dat2 %>%
 
 #merge relevant columns with the BE_synthesis_forest_dat
 BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat2.1, by = "BEplotID", all.x = T)
+#=#
+
+#special treatment for the columns of the 24806_2_Dataset
+#this is a large dataset with over 160'000 rows
+#each row represents a single leaf, on which the area (mm^2) damaged by different classes of herbivores was measured
+#up to 200 leaves per plant species and up to ten plant species per BEplotID
+#to arrive at a measure for herbivory of different classes (columns) of herbivores per BEplotID (rows) the data is severely compressed
+
+dat3.1 <- dat3 %>% 
+  #subset forest plots
+  subset( BEplotID %in% BE_synthesis_forest_dat$BEplotID) %>% 
+  #calculate the percentage of leaf area affected by different classes of herbivores for each individual leaf
+  rowwise( ) %>% 
+  mutate( chewing_damage_ind = (sum(c(a_hole, a_edge), na.rm = T)/lf_area_corr)*100,
+          scraping_sucking_damage_ind = (sum(c(a_scraping, a_sucking, a_scraping_sucking), na.rm = T)/lf_area_corr)*100,
+          mining_damage_ind = (a_mines/lf_area_corr)*100,
+          gall_damage_ind = (a_galls/lf_area_corr)*100) %>% 
+  #scale those percentages across the range of each plant species individually, to make species comparable to each other (i.e. Abies alba comparable with Urtica dioica)
+  group_by( pl_species) %>% 
+  mutate( scaled_chewing_damage_ind = scale(chewing_damage_ind, center = T, scale = T),
+          scaled_scraping_sucking_damage_ind = scale(scraping_sucking_damage_ind, center = T, scale = T),
+          scaled_mining_damage_ind = scale(mining_damage_ind, center = T, scale = T),
+          scaled_gall_damage_ind = scale(gall_damage_ind, center = T, scale = T)) %>% 
+  #then calculate the mean of the scaled percentages for each BEplotID
+  group_by( BEplotID) %>% 
+  summarise( chewing_damage = mean(scaled_chewing_damage_ind, na.rm = T),
+             scraping_sucking_damage = mean(scaled_scraping_sucking_damage_ind, na.rm = T),
+             mining_damage = mean(scaled_mining_damage_ind, na.rm = T),
+             gall_damage = mean(scaled_gall_damage_ind, na.rm = T))
+
+#merge relevant columns with the BE_synthesis_forest_dat
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat3.1, by = "BEplotID", all.x = T)
 #=#
 
 #count NAs in the added columns
@@ -863,6 +897,10 @@ length(which(is.na(BE_synthesis_forest_dat$Annual_Leaching_NH4))) #1 NAs
 length(which(is.na(BE_synthesis_forest_dat$Annual_Leaching_NO3))) #1 NAs
 length(which(is.na(BE_synthesis_forest_dat$Methane_oxidation))) #1 NAs
 ### ===== ###
+
+### === Final polishing of the dataset synthesis functions forest === ###
+#replace NaN with NA
+BE_synthesis_forest_dat[BE_synthesis_forest_dat == "NaN"] <- NA
 
 
 
