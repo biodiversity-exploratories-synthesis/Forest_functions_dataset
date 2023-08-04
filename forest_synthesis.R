@@ -177,7 +177,7 @@ dat7 <- read.table(paste0(pathtodata, "Functions/18787_6_Dataset/18787_6_data.tx
 dat8 <- read.table(paste0(pathtodata, "Functions/23846_10_Dataset/23846_10_data.txt"), header = T, sep = ";")
 dat9 <- read.table(paste0(pathtodata, "Functions/31210_6_Dataset/31210_6_data.txt"), header = T, sep = ";")
 #add two-digit plot names for merging with the BE_synthesis_forest_dat
-names(dat9)
+names(dat5)
 dat <- BEplotZeros(dat, "Plot_ID", plotnam = "Plot")
 dat1 <- BEplotZeros(dat1, "EP_Plotid", plotnam = "Plot")
 dat2 <- BEplotZeros(dat2, "EP_Plotid", plotnam = "Plot")
@@ -282,6 +282,51 @@ names(BE_synthesis_forest_dat)
 BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat.2[,c("CN_ratio_OrgLay_2011","CN_ratio_OrgLay_2014",
                                                                    "CN_ratio_OrgLay_2017","average_CN_OrgLay","Plot")], by = "Plot", all.x = T)
 #=#
+
+#calculate the mini-multifunctionality variable "forest_soilNitrateflxs"
+#a similar variable exists in the grassland functions synthesis dataset (27087)
+#in the 27087 dataset, "soilNitrateflxs" is calculated with the variables nxrA_NB, 16S_NS, nifH and DEA
+#we lack nifH and DEA data for forests
+#therefore, "forest_soildNitrateflxs" is only calculated with the variables nxrA_NB and 16S_NS (from the 21546_2_Dataset)
+#select the relevant columns from "BE_synthesis_forest_dat"
+dat.3 <- BE_synthesis_forest_dat %>% 
+  subset( select = c("Plot", "nxrA_NB", "X16S_NS")) %>%
+  #like in the grasslands, nxrA_NB and X16S_NS are summed up to “nitrite-oxidising functional gene abundances” (nitOx_fga)
+  rowwise( Plot) %>% 
+  mutate( nitOx_fga = sum(c(nxrA_NB, X16S_NS), na.rm = T))
+
+#replace all "0" values of "nitOx_fga" by NA
+dat.3[dat.3$nitOx_fga == 0,] <- NA
+
+#then calculate mini-multifunctionality which here is simply the z-score of nitOx_fga (sd = 1, mean = 0)
+dat.3$forest_soilNitrateflxs <- multidiv(dat.3[,4], sc = "sd", cent = T)[,1]
+
+#merge the forest_soilNitrateflxs column
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat.3[,c("forest_soilNitrateflxs","Plot")], by = "Plot", all.x = T)
+#=#
+
+#calculate the mini-multifunctionality variable "forest_soilAmmoniaflxs"
+#a similar variable exists in the grassland functions synthesis dataset (27087)
+#in the 27087 dataset, "soilAmmoniaflxs" is calculated with the variables amoA_AOA, amoA_AOB and Urease
+#we lack Urease data for forests
+#therefore, "forest_soilAmmoniaflxs" is only calculated with the variables amoA_AOA, amoA_AOB (from the 21546_2_Dataset)
+#select the relevant columns from "BE_synthesis_forest_dat"
+names(BE_synthesis_forest_dat)
+dat.4 <- BE_synthesis_forest_dat %>% 
+  subset( select = c("Plot", "amoA_AOA", "amoA_AOB")) %>%
+  #like in the grasslands, nxrA_NB and X16S_NS are summed up to “nitrite-oxidising functional gene abundances” (nitOx_fga)
+  rowwise( Plot) %>% 
+  mutate( amOX_fga = sum(c(amoA_AOA, amoA_AOB), na.rm = T))
+
+#replace all "0" values of "nitOx_fga" by NA
+dat.4[dat.4$amOX_fga == 0,] <- NA
+
+#then calculate mini-multifunctionality which here is simply the z-score of nitOx_fga (sd = 1, mean = 0)
+dat.4$forest_soilAmmoniaflxs <- multidiv(dat.4[,4], sc = "sd", cent = T)[,1]
+
+#merge the forest_soilNitrateflxs column
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat.4[,c("forest_soilAmmoniaflxs","Plot")], by = "Plot", all.x = T)
+#=#
 names(BE_synthesis_forest_dat)
 #count NAs in the added columns
 length(which(is.na(BE_synthesis_forest_dat$PNR_2014))) #11 NAs
@@ -307,6 +352,8 @@ length(which(is.na(BE_synthesis_forest_dat$CN_ratio_OrgLay_2011))) #1 NAs
 length(which(is.na(BE_synthesis_forest_dat$CN_ratio_OrgLay_2014))) #1 NAs
 length(which(is.na(BE_synthesis_forest_dat$CN_ratio_OrgLay_2017))) #1 NAs
 length(which(is.na(BE_synthesis_forest_dat$average_CN_OrgLay))) #0 NAs
+length(which(is.na(BE_synthesis_forest_dat$forest_soilNitrateflxs))) #3 NAs
+length(which(is.na(BE_synthesis_forest_dat$forest_soilAmmoniaflxs))) #1 NAs
 ### ===== ###
 
 ### === Phosphorus availability === ###
@@ -428,6 +475,8 @@ length(which(is.na(BE_synthesis_forest_dat$Upper_MinSoil_CS_ratio_2014))) #1 NAs
 #Relevant columns (unit):    removal_g (g)
 #                            dung_depletion (proportion of removed dung)
 
+#TODO #CHANGE NAME TO dung_depletion_2017
+
 #read data
 dat <- read.table(paste0(pathtodata, "Functions/21206_3_Dataset/21206_3_data.txt"), header = T, sep = ";")
 dat1 <- read.table(paste0(pathtodata, "Functions/24966_3_Dataset/24966_3_data.txt"), header = T, sep = ";")
@@ -466,7 +515,7 @@ dat1.1 <- dat1 %>%
   subset( Habitat == "F") %>% 
   group_by( Plot) %>% 
   #rename dung_depletion to dung_removal_2017 for consistency with the grassland functions dataset
-  summarise( dung_removal_2017 = mean(dung_depletion, na.rm = T)) 
+  summarise( dung_removal_2017 = mean(dung_depletion, na.rm = T)) #CHANGE NAME TO dung_depletion_2017
 
 #merge relevant columns with the BE_synthesis_forest_dat
 BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat1.1[,c("Plot","dung_removal_2017")], by = "Plot", all.x = T)
@@ -474,7 +523,7 @@ BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat1.1[,c("Plot","dung
 
 #count NAs in the added columns
 length(which(is.na(BE_synthesis_forest_dat$dung_removal_2014))) #2 NAs
-length(which(is.na(BE_synthesis_forest_dat$dung_removal_2017))) #2 NAs
+length(which(is.na(BE_synthesis_forest_dat$dung_removal_2017))) #2 NAs #CHANGE NAME TO dung_depletion_2017
 #=#
 
 #TODO Can dung_removal_2014 and dung_removal_2017 be used as temporal replicates of dung decomposition in the forest Plots?
@@ -924,7 +973,7 @@ names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "CN_ratio"] <- 
 names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "Res_14"] <- "Soil_respiration_2014"
 names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "CO2_rate_mean"] <- "Soil_respiration_2017"
 names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "Phosphorus"] <- "Annual_Leaching_P"
-names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "Phosphate"] <- "Annual_Leaching_PO4"
+names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "Phosphate"] <- "Annual_Leaching_PO4" #REMOVE THIS VARIABLE
 names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "Ammonium"] <- "Annual_Leaching_NH4"
 names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "Nitrate"] <- "Annual_Leaching_NO3"
 #=#
