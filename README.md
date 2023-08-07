@@ -18,4 +18,4 @@ This project is licensed under the terms of the Creative Commons Attribution 4.0
 
 ## Notes
 
-- Dung_removal_2014 has negative values, because different dung types were scaled in order to aggregate them. --> In future, think about how to avoid negative values.
+- Negative values of scaled variables have been corrected, by scaling (sd = 1), but not centering (mean =/= 0). Affected variables are for example dung_removal (2014), which was scaled and centered in the grasslands functions synthesis dataset (BExIS ID 27087). In a future update, scaled variables in the grasslands dataset will not be centered anymore to avoid negative values (not yet implemented).
