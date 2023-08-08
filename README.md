@@ -1,4 +1,4 @@
-# Synthesis_dataset_functions_forest
+![image](https://github.com/biodiversity-exploratories-synthesis/Synthesis_dataset_functions_forest/assets/59728330/4cbc09c5-ecb2-48d4-9394-1a0eab6652e6))![image](https://github.com/biodiversity-exploratories-synthesis/Synthesis_dataset_functions_forest/assets/59728330/5cd478bf-fbec-40be-b7ec-35f9757f373b)# Synthesis_dataset_functions_forest
 Released at Zenodo : NOT YET RELEASED
 
 Code used for generation of the synthesis grassland function dataset [https://github.com/biodiversity-exploratories-synthesis/Synthesis_dataset_functions_forest/Synthesis_dataset_functions_forest.R](https://github.com/biodiversity-exploratories-synthesis/Synthesis_dataset_functions_forest/blob/main/forest_synthesis.R)
@@ -18,4 +18,4 @@ This project is licensed under the terms of the Creative Commons Attribution 4.0
 
 ## Notes
 
-- Negative values of scaled variables have been corrected, by scaling (sd = 1), but not centering (mean =/= 0). Affected variables are for example dung_removal (2014), which was scaled and centered in the grasslands functions synthesis dataset (BExIS ID 27087). In a future update, scaled variables in the grasslands dataset will not be centered anymore to avoid negative values (not yet implemented).
+- Negative values of scaled variables have been corrected, by scaling (sd = 1), but not centering (mean =/= 0). Affected variables are for example dung_removal (21206_3_Dataset) and the leaf area damaged by different herbivores (24806_2_Dataset). Dung removal was scaled and centered in the grasslands functions synthesis dataset (BExIS ID 27087). In a future update, scaled variables in the grasslands dataset will not be centered anymore to avoid negative values (not yet implemented).
