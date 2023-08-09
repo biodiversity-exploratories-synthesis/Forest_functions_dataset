@@ -22,7 +22,7 @@ getwd()
 #Currently variables are added until "Cryptococcus_infestation" in the "Herbivory" Process
 #Add data from the large herbivory dataset before adding variables from the "Nutrient cycling" Process
 view(BE_synthesis_forest_dat[,c(1:4,50:64)])
-write.table(BE_synthesis_forest_dat, file = "BE_synthesis_forest_dat.txt", quote = F, sep = "\t", row.names = F) #Assembled all columns present in the script currently (106 columns)
+write.table(BE_synthesis_forest_dat, file = "BE_synthesis_forest_dat.txt", quote = F, sep = "\t", row.names = F) #Assembled columns until and including Nutrient Cycling (106 columns)
 ### ===== ###
 
 ### === read table checkpoint === ###
@@ -939,7 +939,7 @@ length(which(is.na(BE_synthesis_forest_dat$total_damaged_area))) #1 NAs
 #Relevant columns (unit):    Fine_Roots_Carbon (mg/g)
 #                            Fine_Roots_Nitrogen (mg/g)
 #                            Fine_roots_CN_ratio (ratio from Total_C and Total_N that have the unit percentage (%))
-#                            Res_14 (µg/g) (17026_3_Dataset - Soil respiration 2014)
+#                            Res_14 (µg/g) (17026_3_Dataset - Soil respiration 2011)
 #                            CO2_rate_mean (µg/g) (potential soil respiration rate 2017)
 #                            Soil_respiration_2018 (g/(m^2*d))
 #                            Soil_respiration_2019 (g/(m^2*d))
@@ -1087,6 +1087,133 @@ length(which(is.na(BE_synthesis_forest_dat$Total_litter_N_2017))) #1 NAs
 length(which(is.na(BE_synthesis_forest_dat$Total_litter_N_2018))) #3 NAs
 length(which(is.na(BE_synthesis_forest_dat$average_Total_litter_C))) #1 NAs
 length(which(is.na(BE_synthesis_forest_dat$average_Total_litter_N))) #1 NAs
+### ===== ###
+
+### === Predation === ###
+#Principal Investigator:     Blüthgen
+#Dataset(s):                 25807_3_Dataset
+#Process and component name: Predation
+#Relevant columns (unit):    Predation_prop (fraction )
+
+#read data
+dat <- read.table(paste0(pathtodata, "Functions/25807_3_Dataset/25807_3_data.txt"), header = T, sep = ";")
+#add two-digit plot names for merging with the BE_synthesis_forest_dat
+names(dat)
+dat <- BEplotZeros(dat, "PlotID", plotnam = "Plot")
+
+#special treatment, averaging the five measurements per Plot
+dat.1 <- dat %>% 
+  group_by( Plot) %>% 
+  summarise( caterpillars_predation = mean(Predation_prop, na.rm = T))
+#merge caterpillars_predation with the BE_synthesis_forest_dat
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat.1[,c("caterpillars_predation","Plot")], by = "Plot", all.x = T)
+#count NAs in the added columns
+length(which(is.na(BE_synthesis_forest_dat$caterpillars_predation))) #2 NAs
+### ===== ###
+
+### === Ecological functioning === ###
+#Principal Investigator:     Polle
+#Dataset(s):                 26228_4_Dataset
+#                            26229_4_Dataset
+#                            17086_4_Dataset
+#                            19326_4_Dataset
+#                            23886_3_Dataset
+#Process and component name: Ecological functioning
+#Relevant columns (unit):    DW_FW (organic layer soil dry-weight/fresh-weight ratio; g/10g)
+#                            DW_FW (Upper Mineral soil dry-weight/fresh-weight ratio; g/10g)
+#                            BD (Upper Mineral soil bulk density)
+#                            Weight_MS (g)
+#                            Diameter_Split_Tube (mm)
+
+#read data
+dat <- read.table(paste0(pathtodata, "Functions/26228_4_Dataset/26228_4_data.txt"), header = T, sep = ";")
+dat1 <- read.table(paste0(pathtodata, "Functions/26229_4_Dataset/26229_4_data.txt"), header = T, sep = ";")
+dat2 <- read.table(paste0(pathtodata, "Functions/17086_4_Dataset/17086_4_data.txt"), header = T, sep = ";")
+dat3 <- read.table(paste0(pathtodata, "Functions/19326_4_Dataset/19326_4_data.txt"), header = T, sep = ";")
+dat4 <- read.table(paste0(pathtodata, "Functions/23886_3_Dataset/23886_3_data.txt"), header = T, sep = ";")
+#add two-digit plot names for merging with the BE_synthesis_forest_dat
+names(dat3)
+dat <- BEplotZeros(dat, "EP_Plotid", plotnam = "Plot")
+dat1 <- BEplotZeros(dat1, "EP_Plotid", plotnam = "Plot")
+dat2 <- BEplotZeros(dat2, "EP_Plotid", plotnam = "Plot")
+dat3 <- BEplotZeros(dat3, "EP_Plotid", plotnam = "Plot")
+dat4 <- BEplotZeros(dat4, "EP_Plotid", plotnam = "Plot")
+
+#special treatment for the DW_FW columns of the 26228_4_Dataset and 26229_4_Dataset
+#rename columns before merging
+names(dat)[names(dat) == "DW_FW"] <- "OrgLay_waterholding"
+names(dat1)[names(dat1) == "DW_FW"] <- "MinSoil_waterholding"
+#merge relevant columns with the BE_synthesis_forest_dat
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat[,c("OrgLay_waterholding","Plot")], by = "Plot", all.x = T)
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat1[,c("MinSoil_waterholding","Plot")], by = "Plot", all.x = T)
+#=#
+
+#special treatment for the bulk density (BD) variable of the 17086_4_Dataset 
+dat2.1 <- dat2 %>% 
+  #subset forest plots
+  subset( Plot %in% BE_synthesis_identifier_dat$Plot) %>% 
+  #there are placeholder values in the data, replace them with NA and rename the variable
+  mutate( MinSoil_Bulk_density_2011 = if_else(BD == -888888, NA, BD))
+#merge MinSoil_Bulk_density with the BE_synthesis_forest_dat
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat2.1[,c("MinSoil_Bulk_density_2011","Plot")], by = "Plot", all.x = T)
+#=#
+
+#special treatment for the bulk density variables of the 19326_4_Dataset and 23886_3_Dataset
+#calculate bulk density from mineral soil dry weight (Weight_MS) per volume sampled (g/cm^3)
+#volume of the sampled soil core is calculated as a cylinder of 10 cm height with different diameters (48-56mm)
+#volume of a cylinder = pi * radius^2 * height
+#diameter split tube = 48-56 mm
+#height = 10 cm
+names(dat3)
+dat3.1 <- dat3 %>% 
+  #subset forest plots
+  subset( Plot %in% BE_synthesis_identifier_dat$Plot) %>% 
+  #change character columns to numeric for subsequent calculations
+  mutate( Thickness_upper_mineral_soil_horizont_1 = as.numeric(Thickness_upper_mineral_soil_horizont_1),
+          Thickness_upper_mineral_soil_horizont_2 = as.numeric(Thickness_upper_mineral_soil_horizont_2),
+          Thickness_upper_mineral_soil_horizont_3 = as.numeric(Thickness_upper_mineral_soil_horizont_3),
+          Thickness_upper_mineral_soil_horizont_4 = as.numeric(Thickness_upper_mineral_soil_horizont_4),
+          Thickness_upper_mineral_soil_horizont_5 = as.numeric(Thickness_upper_mineral_soil_horizont_5),
+          Thickness_upper_mineral_soil_horizont_6 = as.numeric(Thickness_upper_mineral_soil_horizont_6),
+          Thickness_upper_mineral_soil_horizont_7 = as.numeric(Thickness_upper_mineral_soil_horizont_7),
+          Thickness_upper_mineral_soil_horizont_8 = as.numeric(Thickness_upper_mineral_soil_horizont_8),
+          Thickness_upper_mineral_soil_horizont_9 = as.numeric(Thickness_upper_mineral_soil_horizont_9),
+          Thickness_upper_mineral_soil_horizont_10 = as.numeric(Thickness_upper_mineral_soil_horizont_10),
+          Thickness_upper_mineral_soil_horizont_11 = as.numeric(Thickness_upper_mineral_soil_horizont_11),
+          Thickness_upper_mineral_soil_horizont_12 = as.numeric(Thickness_upper_mineral_soil_horizont_12),
+          Thickness_upper_mineral_soil_horizont_13 = as.numeric(Thickness_upper_mineral_soil_horizont_13),
+          Thickness_upper_mineral_soil_horizont_14 = as.numeric(Thickness_upper_mineral_soil_horizont_14)) %>%
+  #calculate intermediate variables to keep track
+  rowwise( ) %>% 
+  mutate( radius_split_tube_mm = Diameter_Split_Tube/2,
+          radius_split_tube_cm = radius_split_tube_mm/10,
+          #height of the cylinder vary, use the average upper MinSoil thickness
+          average_thickness_upper_MinSoil = mean(c_across(c(65:78)), na.rm = T), 
+          #calculate the average volume of the soil sample in cm^3
+          volume_cubic_cm = (pi * (radius_split_tube_cm^2) * average_thickness_upper_MinSoil),
+          #14 soil samples per plot were mixed, cleaned and dried, get the average weight of one soil sample
+          average_weight_of_MinSoil_sample = Weight_MS/14,
+          #calculate the average bulk density of the 14 soil samples
+          MinSoil_Bulk_density_2014 = average_weight_of_MinSoil_sample/volume_cubic_cm)
+
+view(dat3.1[,c(1,12,15,65:78,94:99)]) 
+view(dat3[,c(1,12,15,65:78)]) 
+
+#TODO Bulk densities roughly one order of magnitude to large, were 14 soil samples weighted together to get "Weight_MS"?
+#TODO probably the thickness of the upper mineral soil has to be taken into account too. Average that as a 
+names(dat4)
+dat4.1 <- dat4 %>% 
+  #subset forest plots
+  subset( Plot %in% BE_synthesis_identifier_dat$Plot) #%>% 
+  #calculate intermediate variables to keep track
+  mutate( radius_split_tube_mm = Diameter_Split_Tube/2,
+          radius_split_tube_cm = radius_split_tube_mm/10,
+          volume_cubic_cm = (pi * (radius_split_tube_cm^2) * 10),
+          MinSoil_Bulk_density_2014 = Weight_MS/volume_cubic_cm)
+
+
+names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "MinSoil_Bulk_density"] <- "MinSoil_Bulk_density_2011"
+
 ### ===== ###
 
 ### === Final polishing of the dataset synthesis functions forest === ###
