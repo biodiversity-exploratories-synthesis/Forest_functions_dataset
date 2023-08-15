@@ -22,7 +22,7 @@ getwd()
 ### === write table checkpoint === ###
 names(BE_synthesis_forest_dat)
 view(BE_synthesis_forest_dat[,c(1:4,50:100)])
-#Assembled 110 0f 112 columns currently in the metadata
+#Assembled 109 of 111 columns currently in the metadata
 #only MinSoil_Bulk_density_2014 and MinSoil_Bulk_density_2017 are missing due to unclear calculations
 write.table(BE_synthesis_forest_dat, file = "BE_synthesis_forest_dat_v1.txt", quote = F, sep = "\t", row.names = F) 
 ### ===== ###
@@ -859,6 +859,10 @@ c("Beech_herbivory_understorey_overall",
 #and get the average of these percentages for understory and canopy samples per Plot
 #note that herbivory from sucking and gall herbivores averages the herbivory percentages of two columns from the raw data
 dat1.1 <- dat1 %>% 
+  #adjust the strings in the two levels of the factor "Stratum", 
+  #this is important to match the variable names in the metadata
+  mutate( Stratum = case_when(Stratum == "Canopy" ~ "canopy",
+                              Stratum == "understorey" ~ "understory")) %>% 
   #calculate percentage of leaves with signs of herbivory per individual sample (row)
   rowwise( ) %>% 
   mutate( herbivory_overall = (Schaden/sum(Schaden, ohne_Schaden)*100),
@@ -868,13 +872,13 @@ dat1.1 <- dat1 %>%
           herbivory_sucking2 = (Phyllaphis/sum(Phyllaphis, ohne_Phyllaphis)*100),
           herbivory_galls1 = (Gallen/sum(Gallen, ohne_Gallen)*100),
           herbivory_galls2 = (Gallmilben/sum(Gallmilben, ohne_Gallmilben)*100)) %>% 
-  #calculate average percentages for Canopy and understorey samples per Plot
+  #calculate average percentages for canopy and understory samples per Plot
   group_by( Stratum, Plot) %>% 
   summarise( overall = mean(herbivory_overall, na.rm = T),
              mining = mean(herbivory_mining, na.rm = T),
              chewing = mean(herbivory_chewing, na.rm = T),
              sucking = mean(c_across(c(herbivory_sucking1, herbivory_sucking2)), na.rm = T),
-             galls = mean(c_across(c(herbivory_galls1, herbivory_galls2))), na.rm = T) %>%  
+             galls = mean(c_across(c(herbivory_galls1, herbivory_galls2)), na.rm = T)) %>%  
   #pivot the Canopy and understorey averages wider and assign the final variable names to prepare the dataframe for merging
   pivot_wider( names_from = Stratum, names_glue = "Beech_herbivory_{Stratum}_{.value}", values_from = c(overall, mining, chewing, sucking, galls))
 
