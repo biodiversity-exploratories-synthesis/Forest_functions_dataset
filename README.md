@@ -10,13 +10,13 @@ This project is licensed under the terms of the Creative Commons Attribution 4.0
 
 # Scripts
 
-- `forest_functions_synthesis.R` : R-script to assemble and calculate variables for the [forest functions synthesis dataset](https://github.com/biodiversity-exploratories-synthesis/Synthesis_dataset_functions_forest/blob/main/BE_synthesis_forest_dat.txt). Download the raw data from [BExIS](https://www.bexis.uni-jena.de/ddm), unzip them and adjust the "pathtodata" variable to read in raw data and process it. Variables selected from the raw data are sorted by the "Process and component name" (i.e. Soil carbon cycling) and are processed in the respective code blocks.
+- `forest_functions_synthesis.R` : R-script to assemble and calculate variables for the [wide version](https://github.com/biodiversity-exploratories-synthesis/Synthesis_dataset_functions_forest/blob/main/BE_synthesis_forest_dat_wide.txt) of the forest functions synthesis dataset. Download the raw data from [BExIS](https://www.bexis.uni-jena.de/ddm), unzip them and adjust the "pathtodata" variable to read in raw data and process it. Variables selected from the raw data are sorted by the "Process and component name" (i.e. Soil carbon cycling) and are processed in the respective code blocks.
 - `multidiversity.R` : contains function required to calculate mini-multifunctionalities, such as "soilCflxs_2011". Is sourced by forest_synthesis.R.
 
 # BExIS upload
 
-- `forest_functions_helper.R` : R-script used to assist the conversion of the forest functions synthesis dataset from the [wide](https://github.com/biodiversity-exploratories-synthesis/Synthesis_dataset_functions_forest/blob/main/BE_synthesis_forest_dat.txt) into the long format.
-- `transform_to_long_format.R` : R-script to transform the forest functions synthesis dataset, generated with [forest_functions_synthesis.R](https://github.com/biodiversity-exploratories-synthesis/Synthesis_dataset_functions_forest/blob/main/forest_functions_synthesis.R), into the long format ready for upload to [BExIS](https://www.bexis.uni-jena.de/ddm).
+- `forest_functions_helper.R` : R-script to generate a [helper table](https://github.com/biodiversity-exploratories-synthesis/Synthesis_dataset_functions_forest/blob/main/forest_functions_helper.txt) from the metadata, to assist the conversion of the forest functions synthesis dataset from the [wide](https://github.com/biodiversity-exploratories-synthesis/Synthesis_dataset_functions_forest/blob/main/BE_synthesis_forest_dat_wide.txt) into the [long format](https://github.com/biodiversity-exploratories-synthesis/Synthesis_dataset_functions_forest/blob/main/synthesis_dataset_functions_forest_long.txt).
+- `transform_to_long_format.R` : R-script to transform the forest functions synthesis dataset, generated with [forest_functions_synthesis.R](https://github.com/biodiversity-exploratories-synthesis/Synthesis_dataset_functions_forest/blob/main/forest_functions_synthesis.R), into the [long format](https://github.com/biodiversity-exploratories-synthesis/Synthesis_dataset_functions_forest/blob/main/synthesis_dataset_functions_forest_long.txt) ready for upload to [BExIS](https://www.bexis.uni-jena.de/ddm).
 
 ## Notes
 
