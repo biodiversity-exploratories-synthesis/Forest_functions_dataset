@@ -15,7 +15,8 @@ This project is licensed under the terms of the Creative Commons Attribution 4.0
 
 # BExIS upload
 
-- `forest_function_helper.R` : R-script used to assist the conversion of the forest functions synthesis dataset from the wide into the long format.
+- `forest_functions_helper.R` : R-script used to assist the conversion of the forest functions synthesis dataset from the [wide](https://github.com/biodiversity-exploratories-synthesis/Synthesis_dataset_functions_forest/blob/main/BE_synthesis_forest_dat.txt) into the long format.
+- `transform_to_long_format.R` : R-script to transform the forest functions synthesis dataset, generated with [forest_functions_synthesis.R](https://github.com/biodiversity-exploratories-synthesis/Synthesis_dataset_functions_forest/blob/main/forest_functions_synthesis.R), into the long format ready for upload to [BExIS](https://www.bexis.uni-jena.de/ddm).
 
 ## Notes
 
