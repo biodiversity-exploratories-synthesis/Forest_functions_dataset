@@ -48,7 +48,7 @@ names(long_dat.2)[names(long_dat.2) == "codedYear"] <- "Year"
 names(long_dat.2)[names(long_dat.2) == "dataID"] <- "Dataset_ID"
 
 #save the table, it is ready for upload on BExIS
-write.table(long_dat.2, file = "synthesis_dataset_functions_forest.txt", quote = F, sep = "\t", row.names = F)
+write.table(long_dat.2, file = "synthesis_dataset_functions_forest_long.txt", quote = F, sep = "\t", row.names = F)
 ### ===== ###
 
 

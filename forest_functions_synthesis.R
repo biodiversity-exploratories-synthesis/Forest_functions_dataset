@@ -24,7 +24,7 @@ names(BE_synthesis_forest_dat)
 view(BE_synthesis_forest_dat[,c(1:4,50:100)])
 #Assembled 109 of 111 columns currently in the metadata
 #only MinSoil_Bulk_density_2014 and MinSoil_Bulk_density_2017 are missing due to unclear calculations
-write.table(BE_synthesis_forest_dat, file = "BE_synthesis_forest_dat_v1.txt", quote = F, sep = "\t", row.names = F) 
+write.table(BE_synthesis_forest_dat, file = "BE_synthesis_forest_dat_wide.txt", quote = F, sep = "\t", row.names = F) 
 ### ===== ###
 
 ### === read table checkpoint === ###
