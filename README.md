@@ -10,7 +10,7 @@ This project is licensed under the terms of the Creative Commons Attribution 4.0
 
 # Scripts
 
-- `forest_functions_synthesis.R` : R-script to assemble and calculate variables for the [wide version](https://github.com/biodiversity-exploratories-synthesis/Synthesis_dataset_functions_forest/blob/main/BE_synthesis_forest_dat.txt) of the forest functions synthesis dataset. Download the raw data from [BExIS](https://www.bexis.uni-jena.de/ddm), unzip them and adjust the "pathtodata" variable to read in raw data and process it. Variables selected from the raw data are sorted by the "Process and component name" (i.e. Soil carbon cycling) and are processed in the respective code blocks.
+- `forest_functions_synthesis.R` : R-script to assemble and calculate variables for the [wide version](https://github.com/biodiversity-exploratories-synthesis/Synthesis_dataset_functions_forest/blob/main/BE_synthesis_forest_dat_wide.txt) of the forest functions synthesis dataset. Download the raw data from [BExIS](https://www.bexis.uni-jena.de/ddm), unzip them and adjust the "pathtodata" variable to read in raw data and process it. Variables selected from the raw data are sorted by the "Process and component name" (i.e. Soil carbon cycling) and are processed in the respective code blocks.
 - `multidiversity.R` : contains function required to calculate mini-multifunctionalities, such as "soilCflxs_2011". Is sourced by forest_synthesis.R.
 
 # BExIS upload
