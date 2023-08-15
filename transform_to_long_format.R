@@ -1,4 +1,4 @@
-### === Synthesis dataset functions forest transformation to long format === ###
+### === Forest functions synthesis dataset transformation to long format === ###
 
 #Author: Marc Beringer
 #Date: August, 2023
