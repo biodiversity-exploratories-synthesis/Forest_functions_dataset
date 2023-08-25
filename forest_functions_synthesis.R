@@ -16,6 +16,9 @@ getwd()
 
 ### === save a snapshot of the R environment === ###
 #includes information about versions and packages used
+#can be updated if new package versions are installed and required for the script to work
+#see rstuido.github.io/renv/ for more details
+#renv::init()
 #renv::snapshot()
 ### ===== ###
 
@@ -24,7 +27,7 @@ names(BE_synthesis_forest_dat)
 view(BE_synthesis_forest_dat[,c(1:4,50:100)])
 #Assembled 109 of 111 columns currently in the metadata
 #only MinSoil_Bulk_density_2014 and MinSoil_Bulk_density_2017 are missing due to unclear calculations
-write.table(BE_synthesis_forest_dat, file = "BE_synthesis_forest_dat_wide.txt", quote = F, sep = "\t", row.names = F) 
+write.table(BE_synthesis_forest_dat, file = "BE_synthesis_forest_dat_wide_example.txt", quote = F, sep = "\t", row.names = F) 
 ### ===== ###
 
 ### === read table checkpoint === ###

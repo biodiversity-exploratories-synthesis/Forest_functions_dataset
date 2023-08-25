@@ -17,7 +17,7 @@ library(tidyverse)
 ### ===== ###
 
 ### === read data === ###
-forest_fun_syn_wide <- read.table("BE_synthesis_forest_dat_v1.txt", header = T, sep = "\t")
+forest_fun_syn_wide <- read.table("BE_synthesis_forest_dat_wide_example.txt", header = T, sep = "\t")
 forest_fun_helper <- read.table("forest_functions_helper.txt", header = T, sep = "\t")
 ### ===== ###
 
@@ -48,7 +48,7 @@ names(long_dat.2)[names(long_dat.2) == "codedYear"] <- "Year"
 names(long_dat.2)[names(long_dat.2) == "dataID"] <- "Dataset_ID"
 
 #save the table, it is ready for upload on BExIS
-write.table(long_dat.2, file = "synthesis_dataset_functions_forest_long.txt", quote = F, sep = "\t", row.names = F)
+write.table(long_dat.2, file = "synthesis_dataset_functions_forest_long_example.txt", quote = F, sep = "\t", row.names = F)
 ### ===== ###
 
 
