@@ -1,5 +1,5 @@
 
-### === Forest functions synthesis dataset assembly === ###
+### === Forest functions synthesis dataset assembly === ####
 
 #Author(s): Marc Beringer, Paul Armando Gilmour Rivas Luginbühl, Noëlle Schenk, Caterina Penone
 #Date: July, 2023
@@ -9,7 +9,7 @@
 #         Third, calculate new variables where necessary
 #         Fourth, use this wide dataframe and transform it into the long format for upload on BExIS using the "transform_to_long_format.R" script
 
-### === working directory === ### 
+### === working directory === #### 
 setwd("C:/Users/Marc Beringer/Desktop/R/Synthesis_dataset_functions_forest") #Not necessary for the final script
 getwd()
 ### ===== ###
@@ -23,6 +23,7 @@ getwd()
 ### ===== ###
 
 ### === write table checkpoint === ###
+#TODO take out/ uncomment in later version
 names(BE_synthesis_forest_dat)
 view(BE_synthesis_forest_dat[,c(1:4,50:100)])
 #Assembled 109 of 111 columns currently in the metadata
@@ -31,16 +32,17 @@ write.table(BE_synthesis_forest_dat, file = "BE_synthesis_forest_dat_wide_exampl
 ### ===== ###
 
 ### === read table checkpoint === ###
+#TODO take out/ uncomment in later version
 BE_synthesis_forest_dat <- read.table("BE_synthesis_forest_dat.txt", header = T, sep = "\t")
 ### ===== ###
 
-### === libraries === ###
+### === libraries === ####
 {
   library(tidyverse) #load after plyr
 }
 ### ===== ###
 
-### === dependencies === ###
+### === dependencies === ####
 ### === Calculate mini-multifunctionality compound variables from individual ecosystem functions (i.e. variables)
 #' multidiv() function 
 #' @author Eric Allan
@@ -74,7 +76,7 @@ BEplotZeros <- function (dat, column, plotnam="PlotSTD"){
 pathtodata <- "P:/PROJECTS/Exploratories Synthesis/Data/Forest_functions/dataset_creation/raw_data/"
 ### ===== ###
 
-### === data assembly === ###
+### === data assembly === ####
 #create an empty dataframe with identifier columns (Plot, Plot_bexis, exploratory and habitat), which will be filled with relevant columns later
 #Plot is the two-digit plot identifier (e.g. AEW01) that will be used for merging, while Plot_bexis is the classic identifier (e.g. AEW1)
 BE_synthesis_identifier_dat  <- data.frame(Plot = c(paste("AEW", formatC(1:50, width = 2, flag = "0"), sep = ""),
@@ -96,7 +98,7 @@ BE_synthesis_identifier_dat  <- data.frame(Plot = c(paste("AEW", formatC(1:50, w
 BE_synthesis_identifier_dat <- BE_synthesis_identifier_dat %>% subset( habitat == "forest")
 ### ===== ###
 
-### === Root decomposition === ### 
+### === Root decomposition === ####
 #Principal Investigator:     Schrumpf
 #Dataset(s):                 16666_2_Dataset
 #Process and component name: Root decomposition
@@ -104,6 +106,7 @@ BE_synthesis_identifier_dat <- BE_synthesis_identifier_dat %>% subset( habitat =
 
 #read data
 dat <- read.table(paste0(pathtodata, "Functions/16666_2_Dataset/16666_2_data.txt"), header = T, sep = ";")
+
 #add two-digit plot names for merging with the BE_synthesis_forest_dat
 names(dat)
 dat <- BEplotZeros(dat, "EP_Plotid", plotnam = "Plot")
@@ -116,7 +119,7 @@ names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "Mass_loss_Octo
 length(which(is.na(BE_synthesis_forest_dat$Root_decomposition))) #16 NAs
 ### ===== ###
 
-### === Nitrogen availability === ###
+### === Nitrogen availability === ####
 #Principal Investigator(s):  Schloter
 #                            Trumbore
 #                            Bonkowski
@@ -357,7 +360,7 @@ length(which(is.na(BE_synthesis_forest_dat$forest_soilNitrateflxs))) #3 NAs
 length(which(is.na(BE_synthesis_forest_dat$forest_soilAmmoniaflxs))) #1 NAs
 ### ===== ###
 
-### === Phosphorus availability === ###
+### === Phosphorus availability === ####
 #Principal Investigator:     Oelmann
 #                            Schrumpf
 #Dataset(s):                 19286_3_Dataset
@@ -454,7 +457,7 @@ length(which(is.na(BE_synthesis_forest_dat$OrgLay_orthophosphate))) #1 NAs
 length(which(is.na(BE_synthesis_forest_dat$MinSoil_orthophosphate))) #1 NAs
 ### ===== ###
 
-### === Sulfur availability === ###
+### === Sulfur availability === ####
 #Principal Investigator:     Trumbore
 #                            Schrumpf
 #Dataset(s):                 20045_3_Dataset
@@ -515,7 +518,7 @@ length(which(is.na(BE_synthesis_forest_dat$Upper_MinSoil_CS_ratio))) #1 NAs
 length(which(is.na(BE_synthesis_forest_dat$average_O_Horizon_CS_ratio))) #1 NAs
 ### ===== ###
 
-### === Dung decomposition === ###
+### === Dung decomposition === ####
 #Principal Investigator:     Blüthgen
 #Dataset(s):                 21206_3_Dataset
 #                            24966_3_Dataset
@@ -572,7 +575,7 @@ length(which(is.na(BE_synthesis_forest_dat$dung_removal))) #2 NAs
 length(which(is.na(BE_synthesis_forest_dat$dung_depletion))) #2 NAs
 ### ===== ###
 
-### === Soil carbon cycling === ###
+### === Soil carbon cycling === ####
 #Principal Investigator(s):  Trumbore
 #                            Leinweber
 #                            Bonkowski
@@ -701,7 +704,7 @@ length(which(is.na(BE_synthesis_forest_dat$OC_stock_MinSoil_2021))) #1 NAs
 length(which(is.na(BE_synthesis_forest_dat$average_OC_stock_MinSoil))) #0 NAs
 ### ===== ###
 
-### === Phosphatase === ###
+### === Phosphatase === ####
 #Principal Investigator:     Trumbore
 #                            Schrumpf
 #Dataset(s):                 17166_3_Dataset
@@ -740,7 +743,7 @@ length(which(is.na(BE_synthesis_forest_dat$Pho_2014))) #1 NAs
 length(which(is.na(BE_synthesis_forest_dat$average_Pho))) #1 NAs
 ### ===== ###
 
-### === Habitat === ###
+### === Habitat === ####
 #Principal Investigator:     Blüthgen
 #Dataset(s):                 24966_3_Dataset
 #Process and component name: Habitat
@@ -764,7 +767,7 @@ BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat.1[,c("seed_depleti
 length(which(is.na(BE_synthesis_forest_dat$seed_depletion))) #2 NAs
 ### ===== ###
 
-### === Productivity === ###
+### === Productivity === ####
 #Principal Investigator:     Schrumpf
 #Dataset(s):                 14448_3_Dataset
 #Process and component name: Productivity
@@ -793,7 +796,7 @@ length(which(is.na(BE_synthesis_forest_dat$Coarse_Roots_Biomass))) #24 NAs
 length(which(is.na(BE_synthesis_forest_dat$Root_Biomass))) #1 NAs
 ### ===== ###
 
-### === Herbivory === ###
+### === Herbivory === ####
 #Principal Investigator:     Ammer
 #                            Weisser
 #Dataset(s):                 20347_2_Dataset
@@ -955,7 +958,7 @@ length(which(is.na(BE_synthesis_forest_dat$mining_damage))) #1 NAs
 length(which(is.na(BE_synthesis_forest_dat$total_damaged_area))) #1 NAs
 ### ===== ###
 
-### === Nutrient cycling === ###
+### === Nutrient cycling === ####
 #Principal Investigator:     Polle
 #                            Schrumpf
 #                            Marhan
@@ -1122,7 +1125,7 @@ length(which(is.na(BE_synthesis_forest_dat$average_Total_litter_C))) #1 NAs
 length(which(is.na(BE_synthesis_forest_dat$average_Total_litter_N))) #1 NAs
 ### ===== ###
 
-### === Predation === ###
+### === Predation === ####
 #Principal Investigator:     Blüthgen
 #Dataset(s):                 25807_3_Dataset
 #Process and component name: Predation
@@ -1144,7 +1147,7 @@ BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat.1[,c("caterpillars
 length(which(is.na(BE_synthesis_forest_dat$caterpillars_predation))) #2 NAs
 ### ===== ###
 
-### === Ecological functioning === ###
+### === Ecological functioning === ####
 #Principal Investigator:     Polle
 #Dataset(s):                 26228_4_Dataset
 #                            26229_4_Dataset
@@ -1268,7 +1271,7 @@ length(which(is.na(BE_synthesis_forest_dat$MinSoil_Bulk_density_2014))) #2 NAs
 length(which(is.na(BE_synthesis_forest_dat$MinSoil_Bulk_density_2017))) #2 NAs
 ### ===== ###
 
-### === Pest control === ###
+### === Pest control === ####
 #Principal Investigator:     Weisser
 #Dataset(s):                 20035_2_Dataset
 #Process and component name: Pest control
@@ -1288,7 +1291,7 @@ names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "BB_Antagonist_
 length(which(is.na(BE_synthesis_forest_dat$Barkbeetle_antagonist_ratio))) #2 NAs
 ### ===== ###
 
-### === Final polishing of the dataset synthesis functions forest === ###
+### === Final polishing of the dataset synthesis functions forest === ####
 #replace NaN with NA
 BE_synthesis_forest_dat[BE_synthesis_forest_dat == "NaN"] <- NA
 
