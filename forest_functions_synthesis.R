@@ -26,11 +26,11 @@ getwd()
 names(BE_synthesis_forest_dat)
 
 #Assembled until and including P_cycle stocks
-write.table(BE_synthesis_forest_dat, file = "BE_synthesis_forest_dat_wide_Nov23_2.txt", quote = F, sep = "\t", row.names = F) 
+#write.table(BE_synthesis_forest_dat, file = "BE_synthesis_forest_dat_wide_Nov23_2.txt", quote = F, sep = "\t", row.names = F) 
 ### ===== ###
 
 ### === read table checkpoint === ###
-BE_synthesis_forest_dat <- read.table("BE_synthesis_forest_dat_wide_Nov23_2.txt", header = T, sep = "\t")
+#BE_synthesis_forest_dat <- read.table("BE_synthesis_forest_dat_wide_Nov23_2.txt", header = T, sep = "\t")
 ### ===== ###
 
 ### === libraries === ###
@@ -173,10 +173,10 @@ names(dat)
 dat <- BEplotZeros(dat, "Plot", plotnam = "Plot")
 
 #special treatment for the added columns of the 24966_3_Dataset
-#average the subplot measurements of seed_depletion
+#average the subplot measurements of seed_depletion and transform the proportion to percentage
 dat.1 <- dat %>% 
   group_by( Plot) %>% 
-  summarise( seed_depletion = mean(seed_depletion, na.rm = T))
+  summarise( seed_depletion = mean(seed_depletion, na.rm = T)*100)
 
 #merge relevant columns with the BE_synthesis_forest_dat
 BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat.1[,c("seed_depletion","Plot")], by = "Plot", all.x = T)
@@ -216,7 +216,7 @@ names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "all"] <- "brow
 length(which(is.na(BE_synthesis_forest_dat$browsing_percentage))) #47 NAs
 ### ===== ###
 
-### === herbivore_leaf_damage === ###
+### === insect_herbivory === ###
 #Category1:                  flux
 #Catergory2:                 trophic_flux
 #Principal Investigator:     Goßner
@@ -442,12 +442,34 @@ BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, CWM_final, by = "Plot"
 #rename added columns for more context
 names(BE_synthesis_forest_dat)
 names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "CWM_herb_all"] <- "herbivore_leaf_damage_all"
-names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "CWM_herb_ST"] <- "herbivore_leaf_damage_shrubs_trees"
+names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "CWM_herb_ST"] <- "insect_herbivory"
 names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "CWM_herb_H"] <- "herbivore_leaf_damage_herbs"
+
+#since herbivory on herbs data comprises too many NAs (91),
+#include only "insect_herbivory", therefore total herbivory on shrubs and trees, in the final forest functions synthesis dataset
+BE_synthesis_forest_dat <- BE_synthesis_forest_dat %>% 
+  subset( select = -c(herbivore_leaf_damage_all, herbivore_leaf_damage_herbs))
+
+#remove intermediate dataframes from environment
+rm(cov_sp_plot_all,
+   cov_sp_plot_H,
+   cov_sp_plot_ST,
+   coverage_all,
+   coverage_H,
+   coverage_ST,
+   CWM_final,
+   CWMs_all,
+   CWMs_H,
+   CWMs_ST,
+   data_all,
+   data_H,
+   data_ST,
+   for_plants_up,
+   sp_plot_avg_herb)
 
 #count NAs in the added columns
 length(which(is.na(BE_synthesis_forest_dat$herbivore_leaf_damage_all))) #39 NAs
-length(which(is.na(BE_synthesis_forest_dat$herbivore_leaf_damage_shrubs_trees))) #6 NAs
+length(which(is.na(BE_synthesis_forest_dat$insect_herbivory))) #6 NAs
 length(which(is.na(BE_synthesis_forest_dat$herbivore_leaf_damage_herbs))) #91 NAs
 ### ===== ###
 
@@ -474,7 +496,7 @@ BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat.1[,c("caterpillars
 length(which(is.na(BE_synthesis_forest_dat$caterpillars_predation))) #2 NAs
 ### ===== ###
 
-### === barkbeetle_antagonist_ratio === ###
+### === barkbeetle_predation === ###
 #Category1:                  flux
 #Catergory2:                 trophic_flux
 #Principal Investigator:     Weisser
@@ -490,9 +512,9 @@ dat <- BEplotZeros(dat, "EP_Plotid", plotnam = "Plot")
 BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat[,c("BB_Antagonist_ratio","Plot")], by = "Plot", all.x = T)
 
 #special treatment for the added column, rename
-names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "BB_Antagonist_ratio"] <- "barkbeetle_antagonist_ratio"
+names(BE_synthesis_forest_dat)[names(BE_synthesis_forest_dat) == "BB_Antagonist_ratio"] <- "barkbeetle_predation"
 #count NAs in the added columns
-length(which(is.na(BE_synthesis_forest_dat$barkbeetle_antagonist_ratio))) #2 NAs
+length(which(is.na(BE_synthesis_forest_dat$barkbeetle_predation))) #2 NAs
 ### ===== ###
 
 ### === Carbon cycle fluxes === ###
@@ -629,8 +651,9 @@ length(which(is.na(BE_synthesis_forest_dat$soil_methane_oxidation))) #1 NAs
 #Relevant columns (unit):    Cmic (µg/g)
 #                            Carbon_within_fine_roots_Soil_Sampling_May_2011 (mg/g)
 #                            Total_litter_C (g/kg)
-#                            OC_stock (kg/m^2) (17086_4_Dataset - organic soilc carbon stock 2011)
-#                            OC_stock (kg/m^2) (20266_3_Dataset - organic soilc carbon stock 2014)
+#                            OC_stock (kg/m^2) (17086_4_Dataset - organic soil carbon stock 2011)
+#                            OC_stock (kg/m^2) (20266_3_Dataset - organic soil carbon stock 2014)
+#                            C_stock (kg/m^2) (31271_4_Dataset - organic soil carbon stock 2017)
 
 #read data
 dat <- read.table(paste0(pathtodata, "Functions/14106_2_Dataset/14106_2_data.txt"), header = T, sep = ";")
@@ -639,25 +662,26 @@ dat1.1 <- read.table(paste0(pathtodata, "Functions/14567_5_Dataset/14567_5_data.
 dat2 <- read.table(paste0(pathtodata, "Functions/20127_17_Dataset/20127_17_data.txt"), header = T, sep = ";")
 dat3 <- read.table(paste0(pathtodata, "Functions/17086_4_Dataset/17086_4_data.txt"), header = T, sep = ";")
 dat4 <- read.table(paste0(pathtodata, "Functions/20266_3_Dataset/20266_3_data.txt"), header = T, sep = ";")
+dat5 <- read.table(paste0(pathtodata, "Functions/31271_4_Dataset/31271_4_data.txt"), header = T, sep = ";")
 #add two-digit plot names for merging with the BE_synthesis_forest_dat
-names(dat1)
+names(dat5)
 dat <- BEplotZeros(dat, "PlotID", plotnam = "Plot")
 dat1 <- BEplotZeros(dat1, "EP_Plotid", plotnam = "Plot")
 dat1.1 <- BEplotZeros(dat1.1, "EP_Plotid", plotnam = "Plot")
 dat2 <- BEplotZeros(dat2, "EP_Plotid", plotnam = "Plot")
 dat3 <- BEplotZeros(dat3, "EP_Plotid", plotnam = "Plot")
 dat4 <- BEplotZeros(dat4, "EP_Plotid", plotnam = "Plot")
+dat5 <- BEplotZeros(dat5, "EP_Plotid", plotnam = "Plot")
 
 #rename columns
 names(dat)[names(dat) == "Cmic"] <- "microbial_C"
 names(dat1)[names(dat1) == "Carbon_within_fine_roots_Soil_Sampling_May_2011"] <- "fine_roots_C"
 names(dat3)[names(dat3) == "OC_stock"] <- "soil_org_C_2011"
 names(dat4)[names(dat4) == "OC_stock"] <- "soil_org_C_2014"
+names(dat5)[names(dat5) == "C_stock"] <- "soil_org_C_2017"
 #merge
 BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat[,c("microbial_C","Plot")], by = "Plot", all.x = T)
-BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat1[,c("Carbon_within_fine_roots_Soil_Sampling_May_2011","Plot")], by = "Plot", all.x = T)
-BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat3[,c("soil_org_C_2011","Plot")], by = "Plot", all.x = T)
-BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat4[,c("soil_org_C_2014","Plot")], by = "Plot", all.x = T)
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat1[,c("fine_roots_C","Plot")], by = "Plot", all.x = T)
 #=#
 
 #special treatment for the columns of the 19230_3_Dataset and 14567_5_Dataset
@@ -690,29 +714,57 @@ dat2.1 <- dat2 %>%
   pivot_wider( names_from = c("Season", "Element", "Year"), values_from = "Total_litter") %>% 
   #average seasonal measurements to get a value for each year and then average the years
   rowwise( Plot) %>% 
-  mutate( Total_litter_C_2015 = mean(c_across(c("S_C_2015", "A_C_2015")), na.rm = T),
-          Total_litter_C_2016 = mean(c_across(c("W_C_2016", "S_C_2016", "A_C_2016")), na.rm = T),
-          Total_litter_C_2017 = mean(c_across(c("W_C_2017", "S_C_2017", "A_C_2017")), na.rm = T),
-          Total_litter_C_2018 = mean(c_across(c("W_C_2018", "S_C_2018")), na.rm = T),
-          average_Total_litter_C = mean(c_across(c("Total_litter_C_2015", "Total_litter_C_2016", 
-                                                   "Total_litter_C_2017", "Total_litter_C_2018")), na.rm = T))
+  mutate( litter_C_2015 = mean(c_across(c("S_C_2015", "A_C_2015")), na.rm = T),
+          litter_C_2016 = mean(c_across(c("W_C_2016", "S_C_2016", "A_C_2016")), na.rm = T),
+          litter_C_2017 = mean(c_across(c("W_C_2017", "S_C_2017", "A_C_2017")), na.rm = T),
+          litter_C_2018 = mean(c_across(c("W_C_2018", "S_C_2018")), na.rm = T),
+          average_litter_C = mean(c_across(c("litter_C_2015", "litter_C_2016", 
+                                             "litter_C_2017", "litter_C_2018")), na.rm = T))
 #merge individual years, as well as the average between years
-BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat2.1[,c("Total_litter_C_2015", "Total_litter_C_2016",
-                                                                    "Total_litter_C_2017", "Total_litter_C_2018",
-                                                                    "average_Total_litter_C",
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat2.1[,c("litter_C_2015", "litter_C_2016",
+                                                                    "litter_C_2017", "litter_C_2018",
+                                                                    "average_litter_C",
                                                                     "Plot")], by = "Plot", all.x = T)
 #=#
 
+#special treatment for the columns of 17086_4_Dataset, 20266_3_Dataset and 31271_4_Dataset
+#merge
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat3[,c("soil_org_C_2011","Plot")], by = "Plot", all.x = T)
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat4[,c("soil_org_C_2014","Plot")], by = "Plot", all.x = T)
+#the soil_org_C_2011 data of the 17086_4_Dataset contains "-888888.00" instead of NA
+#replace "-888888.00" with NA
+BE_synthesis_forest_dat[BE_synthesis_forest_dat == -888888.00] <- NA
+#the soil_org_C_2017 data of the 31271_4_Dataset is split into the Oa, Oe and Oi horizons, average the organic C content of these horizons
+#additionally the values of the 2017 data range between 0-2200, while the 2011 and 2014 data range between 0-16, probably a error with decimals
+#dividing the 2017 data by 100 to arrive at the same order of magnitude
+dat5.1 <- dat5 %>% 
+  group_by( Plot) %>% 
+  summarize( soil_org_C_2017 = mean(soil_org_C_2017, na.rm = T)/100)
+#merge to BE_synthesis_forest_dat
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat5.1[,c("soil_org_C_2017","Plot")], by = "Plot", all.x = T)
+#calculate the average soil organic carbon of 2011, 2014 and 2017
+dat5.2 <- BE_synthesis_forest_dat %>% 
+  #select relevant columns
+  subset( select = c("Plot", "soil_org_C_2011", "soil_org_C_2014", "soil_org_C_2017")) %>% 
+  #calculate average of temporal replicates for each plot
+  rowwise( Plot) %>% 
+  mutate( average_soil_org_C = mean(c_across(c("soil_org_C_2011", "soil_org_C_2014", "soil_org_C_2017")), na.rm = T))
+#merge
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, dat5.2[,c("average_soil_org_C", "Plot")], by = "Plot", all.x = T)
+#=#
+
 #count NAs in the added columns
-length(which(is.na(BE_synthesis_forest_dat$microbial_C))) #0 NAs 
+length(which(is.na(BE_synthesis_forest_dat$microbial_C))) #2 NAs 
 length(which(is.na(BE_synthesis_forest_dat$fine_roots_C))) #2 NAs 
-length(which(is.na(BE_synthesis_forest_dat$Total_litter_C_2015))) #28 NAs
-length(which(is.na(BE_synthesis_forest_dat$Total_litter_C_2016))) #28 NAs
-length(which(is.na(BE_synthesis_forest_dat$Total_litter_C_2017))) #1 NAs
-length(which(is.na(BE_synthesis_forest_dat$Total_litter_C_2018))) #3 NAs
-length(which(is.na(BE_synthesis_forest_dat$average_Total_litter_C))) #1 NAs
-length(which(is.na(BE_synthesis_forest_dat$soil_org_C_2011))) #1 NAs
+length(which(is.na(BE_synthesis_forest_dat$litter_C_2015))) #28 NAs
+length(which(is.na(BE_synthesis_forest_dat$litter_C_2016))) #28 NAs
+length(which(is.na(BE_synthesis_forest_dat$litter_C_2017))) #1 NAs
+length(which(is.na(BE_synthesis_forest_dat$litter_C_2018))) #3 NAs
+length(which(is.na(BE_synthesis_forest_dat$average_litter_C))) #1 NAs
+length(which(is.na(BE_synthesis_forest_dat$soil_org_C_2011))) #8 NAs
 length(which(is.na(BE_synthesis_forest_dat$soil_org_C_2014))) #1 NAs
+length(which(is.na(BE_synthesis_forest_dat$soil_org_C_2017))) #3 NAs
+length(which(is.na(BE_synthesis_forest_dat$average_soil_org_C))) #0 NAs
 ### ===== ###
 
 ### === Nitrogen cycle fluxes === ###
