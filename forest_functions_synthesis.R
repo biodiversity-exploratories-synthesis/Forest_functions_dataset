@@ -25,8 +25,8 @@ getwd()
 ### === write table checkpoint === ###
 names(BE_synthesis_forest_dat)
 
-#Assembled until and including average_litter_biomass
-write.table(BE_synthesis_forest_dat, file = "BE_synthesis_forest_dat_wide_April2024_1.txt", quote = F, sep = "\t", row.names = F) 
+#Assembled until and including productivity
+#write.table(BE_synthesis_forest_dat, file = "BE_synthesis_forest_dat_wide_April2024_1.txt", quote = F, sep = "\t", row.names = F) 
 ### ===== ###
 
 ### === read table checkpoint === ###
@@ -1239,13 +1239,229 @@ length(which(is.na(BE_synthesis_forest_dat$litter_biomass_2021))) #3 NAs
 length(which(is.na(BE_synthesis_forest_dat$average_litter_biomass))) #1 NAs
 ### ===== ###
 
+### === Exploratories productivity and element stocks === ###
+#NOTE: These functions require external data not available on BExIS, 
+#which is why calculations of these functions are all gathered here, despite their varying categories.
+#Category1:                  stock and flux
+#Catergory2:                 plant_biomass, C_cycle, N_cycle and P_cycle
+#Principal Investigator:     Fischer
+#                            Ammer
+#Dataset(s):                 21426_3_data (Forest Inventory)
+#                            TRY_29211 (TRY trait data)
+#                            22846_4_Dataset
+#Relevant columns (unit):    above_ground_biomass
+#                            above_ground_C
+#                            above_ground_N
+#                            above_ground_P
+#                            iG (22846_4_Dataset - productivity)
+
+#read data
+for_inv_2nd <- fread(paste0(pathtodata, "Functions/21426_3_data/21426_3_data.csv"), header = T, sep = ",")
+for_processes <- read.table(paste0(pathtodata, "Functions/22846_4_Dataset/22846_4_data.txt"), header = T, sep = ";")
+try_traits <- fread(paste0(pathtodata, "Functions/TRY_29211/TRY_29211.txt"), header = T, sep = "\t", dec = ".", quote = "", data.table = T) #Big file, takes time to read
+
+#data formatting
+#rename column "d" into "dbh" (diameter at breast height)
+names(for_inv_2nd)[8] <- "dbh"
+#reformat date column
+for_inv_2nd$Year <- format(as.Date(for_inv_2nd$year, format="%d/%m/%Y"),"%Y")
+
+###Remove rows without trait data----
+try_traits <- try_traits[!is.na(try_traits$TraitID),]
+
+###Remove trait records that are likely wrong----
+try_traits <- filter(try_traits, ErrorRisk <= 4)
+
+###Get average trait values and spread traits to different columns----
+sp_trait_avg <- try_traits %>%
+  select(c(7, 11, 21)) %>%
+  group_by(AccSpeciesName, TraitName) %>%
+  summarise(value = mean(StdValue, na.rm = TRUE)) %>%
+  spread(key = TraitName, value = value)
+
+###Select stem-related traits----
+names(sp_trait_avg)
+sp_trait_avg <- sp_trait_avg[, c(1, 7:10)]
+
+###Separate sp names in Genus & Species----
+sp_trait_avg <- sp_trait_avg %>%
+  separate(col = AccSpeciesName, 
+           into = c("genus", "epithet_specific"), 
+           sep = " ", 
+           remove = FALSE, 
+           extra = "drop")  %>%
+  select(-3)
+
+names(sp_trait_avg)[1] <- "species"
+
+###Filter species/genus in forest inventory----
+sp_names <- for_inv_2nd %>%
+  select(species) %>%
+  unique() %>% 
+  arrange(species)
+
+sp_names$species <- gsub("_", " ", sp_names$species) 
+sp_names<- sp_names %>% 
+  separate_wider_delim(species, " ", names = c("genus", "epithet_specific"), cols_remove = FALSE) %>%
+  select(-2)
+
+###Join trait data to species names----
+traits_sp_inv <- left_join(sp_names, sp_trait_avg, by = c("species", "genus"))
+names(traits_sp_inv)[3:6] <- c("stem_C", "stem_N", "stem_P", "SSD") 
+
+###Join sp/trait with missing values to genus-level trait data----
+names(try_traits)
+
+genus_trait_avg <- try_traits %>%
+  select(c(7, 11, 21)) %>%
+  group_by(AccSpeciesName, TraitName) %>%
+  summarise(value = mean(StdValue, na.rm = TRUE)) 
+
+genus_trait_avg <- genus_trait_avg %>% 
+  separate(col = AccSpeciesName, 
+           into = c("genus", "epithet_specific"), 
+           sep = " ", 
+           remove = FALSE, 
+           extra = "drop") %>%
+  select(-epithet_specific)
+
+genus_trait_avg <- genus_trait_avg %>%
+  group_by(genus, TraitName) %>%
+  summarise(value = mean(value)) %>%
+  spread(key = TraitName, value = value) %>%
+  select(c(1, 7:10))
+
+names(genus_trait_avg)[2:5] <- c("stem_C", "stem_N", "stem_P", "SSD")
+
+names(traits_sp_inv)
+names(genus_trait_avg)
+
+genus_C <- traits_sp_inv %>%
+  select(1:3) %>% 
+  filter(is.na(stem_C)) %>% select(-3) %>%
+  left_join(genus_trait_avg[,1:2], by = "genus") 
+
+genus_N <- traits_sp_inv %>%
+  select(c(1:2, 4)) %>% 
+  filter(is.na(stem_N)) %>% select(-3) %>%
+  left_join(genus_trait_avg[,c(1,3)], by = "genus")  
+
+genus_P <- traits_sp_inv %>%
+  select(c(1:2, 5)) %>% 
+  filter(is.na(stem_P)) %>% select(-3) %>%
+  left_join(genus_trait_avg[,c(1,4)], by = "genus")  
+
+genus_SSD <- traits_sp_inv %>%
+  select(c(1:2, 6)) %>% 
+  filter(is.na(SSD)) %>% select(-3) %>%
+  left_join(genus_trait_avg[,c(1,5)], by = "genus")  
+
+###Filter NAs from species-level data and join genus-level data----
+stem_C <- traits_sp_inv %>% 
+  select(1:3) %>% 
+  filter(!is.na(stem_C)) %>%
+  rbind.data.frame(genus_C)
+
+stem_N <- traits_sp_inv %>% 
+  select(c(1:2, 4)) %>% 
+  filter(!is.na(stem_N)) %>%
+  rbind.data.frame(genus_N)
+
+stem_P <- traits_sp_inv %>% 
+  select(c(1:2, 5)) %>% 
+  filter(!is.na(stem_P)) %>%
+  rbind.data.frame(genus_P)
+
+SSD <- traits_sp_inv %>% 
+  select(c(1:2, 6)) %>% 
+  filter(!is.na(SSD)) %>%
+  rbind.data.frame(genus_SSD)
+
+trait_df <- stem_C %>%
+  left_join(stem_N, by = c("genus", "species")) %>%
+  left_join(stem_P, by = c("genus", "species")) %>%
+  left_join(SSD, by = c("genus", "species")) %>%
+  arrange(species)
+#=#
+
+#Analyses----
+#if you want to skip the above data formatting part, read the "Traits_ForInv.csv" here
+#trait_df <- fread("Datasets/Forest_Functions/Traits_ForInv.csv")
+
+##Get productivity----
+productivity_df <- for_processes %>%
+ select(EP, iG) %>%
+ na.omit()
+
+##Calculate nutrient stocks in above ground biomass (AGB)----
+
+#Calculate total tree volume per species/plot
+for_inv_2nd$species <- gsub("_", " ", for_inv_2nd$species)
+
+stocks_sp_plot <- for_inv_2nd %>%
+  select(EP, species, v) %>%
+  group_by(EP, species) %>%
+  summarise(volume = sum(v)) %>% 
+  left_join(trait_df[,-1]) %>%
+  group_by(EP, species) %>%
+  mutate(AGB = (volume*1000000)*SSD) %>% #AGB in g, transforming volume to cm3
+  mutate(C_stock = (AGB*stem_C),
+         N_stock = AGB*stem_N,
+         P_stock = AGB*stem_P) %>%
+  ungroup() %>% 
+  group_by(EP) %>%
+  mutate(plot_AGB = sum(AGB)) %>%
+  ungroup() %>%
+  group_by(species) %>%
+  mutate(rel_AGB = AGB/plot_AGB) 
+
+stocks_plot <- stocks_sp_plot %>%
+  group_by(EP) %>%
+  summarise(AGB = sum(AGB, na.rm = TRUE),
+            C_stock = sum(C_stock, na.rm = TRUE),
+            N_stock = sum(N_stock, na.rm = TRUE),
+            P_stock = sum(P_stock, na.rm = TRUE))
+
+#Transform AGB and stocks to Mg - attention Mg not mg
+stocks_plot <- stocks_plot[,1:5]
+stocks_plot$AGB <- stocks_plot$AGB*1000#transform to mg
+stocks_plot$C_stock <- stocks_plot$C_stock/1000000000 #transform to Mg
+stocks_plot$N_stock <- stocks_plot$N_stock/1000000000 #transform to Mg
+stocks_plot$P_stock <- stocks_plot$P_stock/1000000000 #transform to Mg
+stocks_plot$AGB <- stocks_plot$AGB/1000000000 #transform to Mg
+
+#Join productivity
+final_df <- left_join(stocks_plot, productivity_df)
+
+#rename columns
+names(final_df)
+
+names(final_df)[names(final_df) == "EP"] <- "Plot"
+names(final_df)[names(final_df) == "AGB"] <- "above_ground_biomass"
+names(final_df)[names(final_df) == "C_stock"] <- "above_ground_C"
+names(final_df)[names(final_df) == "N_stock"] <- "above_ground_N"
+names(final_df)[names(final_df) == "P_stock"] <- "above_ground_P"
+names(final_df)[names(final_df) == "iG"] <- "productivity"
+
+#merge functions with BE_synthesis_forest_dat
+BE_synthesis_forest_dat <- merge(BE_synthesis_forest_dat, final_df, by = "Plot", all.x = T)
+#=#
+
+#count NAs in the added columns
+length(which(is.na(BE_synthesis_forest_dat$above_ground_biomass))) #1 NAs
+length(which(is.na(BE_synthesis_forest_dat$above_ground_C))) #1 NAs
+length(which(is.na(BE_synthesis_forest_dat$above_ground_N))) #1 NAs
+length(which(is.na(BE_synthesis_forest_dat$above_ground_P))) #1 NAs
+length(which(is.na(BE_synthesis_forest_dat$productivity))) #17 NAs
+### ===== ###
+
 
 ### === Final polishing of the dataset synthesis functions forest === ###
 #replace NaN with NA
 BE_synthesis_forest_dat[BE_synthesis_forest_dat == "NaN"] <- NA
 #replace BExIS placeholder values "-888888.00" with NA
 BE_synthesis_forest_dat[BE_synthesis_forest_dat == -888888.00] <- NA
-
+### ===== ###
 
 
 

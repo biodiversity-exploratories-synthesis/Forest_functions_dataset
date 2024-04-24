@@ -73,3 +73,8 @@ litter_biomass_2019	litter_biomass	2019	20126	29
 litter_biomass_2020	litter_biomass	2020	20126	29
 litter_biomass_2021	litter_biomass	2021	20126	29
 average_litter_biomass	litter_biomass	4444	20126	29
+above_ground_biomass	above_ground_biomass	4444	4444	4444
+above_ground_C	above_ground_C	4444	4444	4444
+above_ground_N 	above_ground_N 	4444	4444	4444
+above_ground_P	above_ground_P 	4444	4444	4444
+productivity	productivity	4444	22846	4
