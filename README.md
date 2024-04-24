@@ -6,7 +6,7 @@ This project is licensed under the terms of the Creative Commons Attribution 4.0
 
 # Versions
 
-- August 2023: Currently final decisions are being made on what to include in the synthesis forest functions dataset.
+- April 2024: Currently the synthesis dataset is being finished and the upload is in progress.
 
 # Scripts
 
